@@ -1,8 +1,8 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
-
-export const revalidate = 30;
+import { labelFor, rangeFromSearch } from "@/lib/dateRange";
 
 const STATUS_COLOR: Record<string, string> = {
   success: "text-up",
@@ -11,19 +11,25 @@ const STATUS_COLOR: Record<string, string> = {
   running: "text-cyan",
 };
 
-export default async function OpsPage() {
+export default async function OpsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const range = rangeFromSearch(searchParams);
   const [universe, runs] = await Promise.all([
     api.universe(),
-    api.sourceRuns(60).catch(() => []),
+    api.sourceRuns(60, range).catch(() => []),
   ]);
 
   return (
     <Shell universe={universe}>
-      <header className="mb-3 flex items-baseline gap-4 border-b border-border pb-2">
+      <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">Ingest Health</h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          source_runs · last {runs.length}
+          source_runs · {runs.length} rows · {labelFor(range)}
         </span>
+        <DateRangePicker className="ml-auto" />
       </header>
 
       {runs.length === 0 ? (

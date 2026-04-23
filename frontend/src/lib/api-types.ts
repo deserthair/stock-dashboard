@@ -1093,6 +1093,8 @@ export interface operations {
     list_events_api_events_get: {
         parameters: {
             query?: {
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1158,6 +1160,8 @@ export interface operations {
                 ticker?: string | null;
                 past_only?: boolean;
                 upcoming_only?: boolean;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1307,6 +1311,8 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1339,6 +1345,8 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1371,6 +1379,8 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1403,6 +1413,8 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1435,6 +1447,8 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -1552,6 +1566,8 @@ export interface operations {
             query: {
                 feature: string;
                 target: string;
+                start_date?: string | null;
+                end_date?: string | null;
             };
             header?: never;
             path?: never;
@@ -1583,6 +1599,8 @@ export interface operations {
         parameters: {
             query?: {
                 method?: string;
+                start_date?: string | null;
+                end_date?: string | null;
             };
             header?: never;
             path?: never;
@@ -1612,7 +1630,10 @@ export interface operations {
     };
     get_regressions_api_analysis_regression_get: {
         parameters: {
-            query?: never;
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1628,11 +1649,24 @@ export interface operations {
                     "application/json": components["schemas"]["RegressionFitOut"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     list_hypotheses_api_hypotheses_get: {
         parameters: {
-            query?: never;
+            query?: {
+                ticker?: string | null;
+                start_date?: string | null;
+                end_date?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1648,11 +1682,22 @@ export interface operations {
                     "application/json": components["schemas"]["HypothesisTrackerSummary"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     list_runs_api_ops_source_runs_get: {
         parameters: {
             query?: {
+                start_date?: string | null;
+                end_date?: string | null;
                 limit?: number;
             };
             header?: never;

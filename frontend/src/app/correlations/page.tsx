@@ -3,45 +3,51 @@ import { CorrelationLab } from "@/components/analysis/CorrelationLab";
 import { Heatmap } from "@/components/analysis/Heatmap";
 import { RegressionSummary } from "@/components/analysis/RegressionSummary";
 import { Shell } from "@/components/layout/Shell";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { fmtSigned } from "@/lib/format";
-
-export const revalidate = 600;
+import { labelFor, rangeFromSearch } from "@/lib/dateRange";
 
 const DEFAULT_FEATURE = "news_sentiment_mean_30d";
 const DEFAULT_TARGET = "eps_surprise_pct";
 
-export default async function CorrelationsPage() {
+export default async function CorrelationsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const range = rangeFromSearch(searchParams);
   const [universe, axes, scatter, heatmap, regressions, correlations] = await Promise.all([
     api.universe(),
     api.analysisAxes().catch(() => ({ features: [], targets: [] })),
     api
-      .scatter(DEFAULT_FEATURE, DEFAULT_TARGET)
+      .scatter(DEFAULT_FEATURE, DEFAULT_TARGET, range)
       .catch(() => ({
         feature: DEFAULT_FEATURE,
         target: DEFAULT_TARGET,
         points: [],
         line: null,
       })),
-    api.heatmap("pearson").catch(() => ({
+    api.heatmap("pearson", range).catch(() => ({
       method: "pearson",
       features: [],
       matrix: [],
       sample_sizes: [],
     })),
-    api.regression().catch(() => []),
+    api.regression(range).catch(() => []),
     api.correlations().catch(() => []),
   ]);
 
   return (
     <Shell universe={universe}>
-      <header className="mb-3 flex items-baseline gap-4 border-b border-border pb-2">
+      <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">
           Correlation Lab
         </h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          Exploratory analysis · scatter · heatmap · OLS vs Lasso
+          Scatter · heatmap · OLS vs Lasso · {labelFor(range)}
         </span>
+        <DateRangePicker className="ml-auto" />
       </header>
 
       <div className="mb-3 grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_1fr]">

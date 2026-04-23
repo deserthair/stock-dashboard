@@ -8,6 +8,7 @@ from analysis.outcomes import compute as compute_outcome
 from ..db import get_db
 from ..models import Company, CompanySignal, Earnings
 from ..schemas import EarningsRow, UpcomingEarnings
+from ._filters import apply_date_range
 
 router = APIRouter(prefix="/api/earnings", tags=["earnings"])
 
@@ -71,6 +72,8 @@ def list_earnings(
     ticker: str | None = None,
     past_only: bool = False,
     upcoming_only: bool = False,
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     limit: int = Query(default=200, ge=1, le=500),
 ) -> list[EarningsRow]:
     """Calendar view: one row per earnings event with outcome if available."""
@@ -84,6 +87,7 @@ def list_earnings(
         q = q.filter(Earnings.report_date <= date.today())
     if upcoming_only:
         q = q.filter(Earnings.report_date >= date.today())
+    q = apply_date_range(q, Earnings.report_date, start_date, end_date, is_datetime=False)
     rows = q.order_by(Earnings.report_date.desc()).limit(limit).all()
 
     # Pull company_signals for hypothesis context on upcoming rows.

@@ -180,3 +180,65 @@ def test_analysis_regression(client):
     # At least one lasso fit should have coefficients
     lasso_fits = [f for f in fits if f["method"] == "lasso"]
     assert any(len(f["coefficients"]) > 0 for f in lasso_fits)
+
+
+# ---------- date-range filters ----------
+
+
+def test_date_range_narrows_earnings(client):
+    wide = client.get("/api/earnings").json()
+    narrow = client.get(
+        "/api/earnings?start_date=2025-10-01&end_date=2026-01-31"
+    ).json()
+    assert len(narrow) < len(wide)
+    assert all(
+        "2025-10-01" <= row["report_date"] <= "2026-01-31" for row in narrow
+    )
+
+
+def test_date_range_invalid_format(client):
+    r = client.get("/api/earnings?start_date=garbage")
+    assert r.status_code == 400
+    assert "start_date" in r.json()["detail"].lower()
+
+
+def test_date_range_reversed_rejected(client):
+    r = client.get("/api/earnings?start_date=2026-05-01&end_date=2026-01-01")
+    assert r.status_code == 400
+
+
+def test_date_range_on_scatter(client):
+    wide = client.get(
+        "/api/analysis/scatter?feature=news_sentiment_mean_30d&target=eps_surprise_pct"
+    ).json()
+    narrow = client.get(
+        "/api/analysis/scatter"
+        "?feature=news_sentiment_mean_30d&target=eps_surprise_pct"
+        "&start_date=2025-10-01&end_date=2026-03-31"
+    ).json()
+    assert len(narrow["points"]) <= len(wide["points"])
+    # all points must fall inside the narrow window
+    for p in narrow["points"]:
+        assert "2025-10-01" <= p["report_date"] <= "2026-03-31"
+
+
+def test_date_range_on_hypotheses(client):
+    wide = client.get("/api/hypotheses").json()
+    narrow = client.get(
+        "/api/hypotheses?start_date=2025-10-01&end_date=2026-01-31"
+    ).json()
+    assert narrow["total"] <= wide["total"]
+    for row in narrow["rows"]:
+        assert "2025-10-01" <= row["report_date"] <= "2026-01-31"
+
+
+def test_date_range_open_bounds(client):
+    """Only one bound supplied — the other side is unbounded."""
+    r1 = client.get("/api/earnings?start_date=2026-01-01")
+    assert r1.status_code == 200
+    for row in r1.json():
+        assert row["report_date"] >= "2026-01-01"
+    r2 = client.get("/api/earnings?end_date=2025-12-31")
+    assert r2.status_code == 200
+    for row in r2.json():
+        assert row["report_date"] <= "2025-12-31"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
@@ -7,6 +8,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Pill } from "@/components/ui/Pill";
 import { ScatterPlot } from "./ScatterPlot";
 import type { AnalysisAxesResponse, ScatterResponse } from "@/lib/types";
+import type { DateRange } from "@/lib/dateRange";
 import { fmtSigned } from "@/lib/format";
 
 export function CorrelationLab({
@@ -20,17 +22,31 @@ export function CorrelationLab({
   initialTarget: string;
   initial: ScatterResponse;
 }) {
+  const searchParams = useSearchParams();
+  const range: DateRange = {
+    from: searchParams.get("from") || undefined,
+    to: searchParams.get("to") || undefined,
+  };
+  const rangeKey = `${range.from ?? ""}|${range.to ?? ""}`;
+
   const [feature, setFeature] = useState(initialFeature);
   const [target, setTarget] = useState(initialTarget);
   const [data, setData] = useState<ScatterResponse>(initial);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (feature === initial.feature && target === initial.target) return;
+    const initialKey = `${range.from ?? ""}|${range.to ?? ""}`;
+    // Skip the initial render — the server already returned exactly this pair/range.
+    if (
+      feature === initial.feature &&
+      target === initial.target &&
+      initialKey === rangeKey
+    )
+      return;
     let cancelled = false;
     setLoading(true);
     api
-      .scatter(feature, target)
+      .scatter(feature, target, range)
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -44,7 +60,7 @@ export function CorrelationLab({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feature, target]);
+  }, [feature, target, rangeKey]);
 
   const line = data.line;
   const significant = line?.pearson_p !== null && line?.pearson_p !== undefined && line.pearson_p < 0.05;

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { FilingsList } from "@/components/company/FilingsList";
@@ -18,14 +19,16 @@ import {
   fmtSigma,
   fmtSigned,
 } from "@/lib/format";
-
-export const revalidate = 120;
+import { labelFor, rangeFromSearch } from "@/lib/dateRange";
 
 export default async function CompanyPage({
   params,
+  searchParams,
 }: {
   params: { ticker: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
+  const range = rangeFromSearch(searchParams);
   let company;
   let universe;
   let news;
@@ -37,10 +40,10 @@ export default async function CompanyPage({
     [company, universe, news, filings, social, jobs, prices] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
-      api.news(params.ticker, 30).catch(() => []),
-      api.filings(params.ticker, 30).catch(() => []),
-      api.social(params.ticker, 30).catch(() => []),
-      api.jobs(params.ticker, 12).catch(() => []),
+      api.news(params.ticker, 30, range).catch(() => []),
+      api.filings(params.ticker, 30, range).catch(() => []),
+      api.social(params.ticker, 30, range).catch(() => []),
+      api.jobs(params.ticker, 12, range).catch(() => []),
       api.companyPrices(params.ticker, 90).catch(() => ({ ticker: params.ticker.toUpperCase(), bars: [], markers: [] })),
     ]);
   } catch {
@@ -123,6 +126,11 @@ export default async function CompanyPage({
 
   return (
     <Shell universe={universe} activeTicker={company.ticker}>
+      <div className="mb-3 flex items-center justify-between border-b border-border pb-2 text-[11px] text-fg-faint">
+        <span className="uppercase tracking-[0.1em]">Tabs filter: {labelFor(range)}</span>
+        <DateRangePicker />
+      </div>
+
       <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-6 border border-border bg-panel p-5">
         <div className="font-serif text-[48px] font-bold leading-none tracking-tight text-accent">
           {company.ticker}

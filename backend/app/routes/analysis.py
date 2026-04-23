@@ -19,6 +19,7 @@ from ..schemas import (
     ScatterPointOut,
     ScatterResponse,
 )
+from ._filters import parse_range
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -91,13 +92,16 @@ def get_axes() -> AnalysisAxesResponse:
 def get_scatter(
     feature: str = Query(...),
     target: str = Query(...),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> ScatterResponse:
     if feature not in FEATURE_COLS:
         raise HTTPException(status_code=400, detail=f"Unknown feature {feature}")
     if target not in TARGET_COLS:
         raise HTTPException(status_code=400, detail=f"Unknown target {target}")
-    points, line = analysis_scatter.build(db, feature, target)
+    s, e = parse_range(start_date, end_date)
+    points, line = analysis_scatter.build(db, feature, target, start_date=s, end_date=e)
     return ScatterResponse(
         feature=feature,
         target=target,
@@ -120,15 +124,23 @@ def get_scatter(
 @router.get("/heatmap", response_model=HeatmapResponse)
 def get_heatmap(
     method: str = Query(default="pearson", pattern="^(pearson|spearman)$"),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> HeatmapResponse:
-    data = analysis_heatmap.build(db, method=method)
+    s, e = parse_range(start_date, end_date)
+    data = analysis_heatmap.build(db, method=method, start_date=s, end_date=e)
     return HeatmapResponse(**data)
 
 
 @router.get("/regression", response_model=list[RegressionFitOut])
-def get_regressions(db: Session = Depends(get_db)) -> list[RegressionFitOut]:
-    fits = analysis_regression.fit_all(db)
+def get_regressions(
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[RegressionFitOut]:
+    s, e = parse_range(start_date, end_date)
+    fits = analysis_regression.fit_all(db, start_date=s, end_date=e)
     return [
         RegressionFitOut(
             method=f.method,

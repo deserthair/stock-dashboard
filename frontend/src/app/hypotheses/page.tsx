@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { StatTile } from "@/components/ui/StatTile";
@@ -9,24 +10,29 @@ import {
   fmtPct,
   fmtSigned,
 } from "@/lib/format";
+import { labelFor, rangeFromSearch } from "@/lib/dateRange";
 
-export const revalidate = 300;
-
-export default async function HypothesesPage() {
+export default async function HypothesesPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const range = rangeFromSearch(searchParams);
   const [universe, tracker] = await Promise.all([
     api.universe(),
-    api.hypothesesTracker().catch(() => ({
+    api.hypothesesTracker(range).catch(() => ({
       total: 0, scored: 0, correct: 0, accuracy_pct: null, rows: [],
     })),
   ]);
 
   return (
     <Shell universe={universe}>
-      <header className="mb-3 flex items-baseline gap-4 border-b border-border pb-2">
+      <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">Hypothesis Tracker</h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          Predicted vs actual · running accuracy
+          Predicted vs actual · {labelFor(range)}
         </span>
+        <DateRangePicker className="ml-auto" />
       </header>
 
       <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-4">

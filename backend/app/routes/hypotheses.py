@@ -6,7 +6,7 @@ hypothesis_score stored on the earnings row, set by the seed or by a
 backfill job) against the actual beat/miss outcome. Reports running
 accuracy."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from analysis.outcomes import compute as compute_outcome
@@ -14,6 +14,7 @@ from analysis.outcomes import compute as compute_outcome
 from ..db import get_db
 from ..models import Company, Earnings
 from ..schemas import HypothesisTrackerRow, HypothesisTrackerSummary
+from ._filters import apply_date_range
 
 router = APIRouter(prefix="/api/hypotheses", tags=["hypotheses"])
 
@@ -29,13 +30,20 @@ def _hyp_label(score: float | None) -> str | None:
 
 
 @router.get("", response_model=HypothesisTrackerSummary)
-def list_hypotheses(db: Session = Depends(get_db)) -> HypothesisTrackerSummary:
-    rows = (
+def list_hypotheses(
+    db: Session = Depends(get_db),
+    ticker: str | None = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+) -> HypothesisTrackerSummary:
+    q = (
         db.query(Earnings, Company)
         .join(Company, Company.company_id == Earnings.company_id)
-        .order_by(Earnings.report_date.desc())
-        .all()
     )
+    if ticker:
+        q = q.filter(Company.ticker == ticker.upper())
+    q = apply_date_range(q, Earnings.report_date, start_date, end_date, is_datetime=False)
+    rows = q.order_by(Earnings.report_date.desc()).all()
 
     tracker: list[HypothesisTrackerRow] = []
     scored = 0

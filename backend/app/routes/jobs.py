@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Company, JobsSnapshot
 from ..schemas import JobsSnapshotOut
+from ._filters import apply_date_range
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -12,6 +13,8 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 def list_jobs(
     db: Session = Depends(get_db),
     ticker: str | None = None,
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     limit: int = Query(default=30, ge=1, le=365),
 ) -> list[JobsSnapshotOut]:
     q = (
@@ -20,6 +23,9 @@ def list_jobs(
     )
     if ticker:
         q = q.filter(Company.ticker == ticker.upper())
+    q = apply_date_range(
+        q, JobsSnapshot.snapshot_date, start_date, end_date, is_datetime=False
+    )
     rows = q.order_by(JobsSnapshot.snapshot_date.desc()).limit(limit).all()
     return [
         JobsSnapshotOut(

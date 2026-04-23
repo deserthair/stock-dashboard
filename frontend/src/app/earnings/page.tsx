@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import {
@@ -10,13 +11,17 @@ import {
   fmtRevenue,
   fmtSigned,
 } from "@/lib/format";
+import { labelFor, rangeFromSearch } from "@/lib/dateRange";
 
-export const revalidate = 300;
-
-export default async function EarningsPage() {
+export default async function EarningsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const range = rangeFromSearch(searchParams);
   const [universe, earnings] = await Promise.all([
     api.universe(),
-    api.earningsAll().catch(() => []),
+    api.earningsAll({}, range).catch(() => []),
   ]);
 
   const now = new Date().toISOString().slice(0, 10);
@@ -27,11 +32,12 @@ export default async function EarningsPage() {
 
   return (
     <Shell universe={universe}>
-      <header className="mb-3 flex items-baseline gap-4 border-b border-border pb-2">
+      <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">Earnings Calendar</h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          {upcoming.length} upcoming · {past.length} past
+          {upcoming.length} upcoming · {past.length} past · {labelFor(range)}
         </span>
+        <DateRangePicker className="ml-auto" />
       </header>
 
       <Panel title={`Upcoming · Next ${upcoming.length}`} meta="FINNHUB" tight>

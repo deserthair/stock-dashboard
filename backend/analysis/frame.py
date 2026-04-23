@@ -8,6 +8,7 @@ all consume uniformly.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Iterable
 
 from sqlalchemy.orm import Session
@@ -64,16 +65,25 @@ def _eps_beat(e: Earnings) -> float | None:
     return 1.0 if e.eps_actual > e.eps_estimate else 0.0
 
 
-def load_frame(s: Session, feature_version: str = "v0") -> list[FrameRow]:
+def load_frame(
+    s: Session,
+    feature_version: str = "v0",
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[FrameRow]:
     from analysis.outcomes import compute as compute_outcome
 
-    rows = (
+    q = (
         s.query(EarningsFeature, Earnings, Company)
         .join(Earnings, Earnings.earnings_id == EarningsFeature.earnings_id)
         .join(Company, Company.company_id == Earnings.company_id)
         .filter(EarningsFeature.feature_version == feature_version)
-        .all()
     )
+    if start_date is not None:
+        q = q.filter(Earnings.report_date >= start_date)
+    if end_date is not None:
+        q = q.filter(Earnings.report_date <= end_date)
+    rows = q.all()
     out: list[FrameRow] = []
     for feat, earn, company in rows:
         oc = compute_outcome(s, earn)

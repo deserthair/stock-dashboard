@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Company, RedditPost, SocialPost
 from ..schemas import RedditPostOut, SocialPostOut
+from ._filters import apply_date_range
 
 router = APIRouter(prefix="/api/social", tags=["social"])
 
@@ -12,6 +13,8 @@ router = APIRouter(prefix="/api/social", tags=["social"])
 def list_social(
     db: Session = Depends(get_db),
     ticker: str | None = None,
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
 ) -> list[SocialPostOut]:
     q = (
@@ -20,6 +23,7 @@ def list_social(
     )
     if ticker:
         q = q.filter(Company.ticker == ticker.upper())
+    q = apply_date_range(q, SocialPost.fetched_at, start_date, end_date, is_datetime=True)
     rows = q.order_by(SocialPost.fetched_at.desc()).limit(limit).all()
     return [
         SocialPostOut(
@@ -40,6 +44,8 @@ def list_social(
 def list_reddit(
     db: Session = Depends(get_db),
     ticker: str | None = None,
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
 ) -> list[RedditPostOut]:
     q = (
@@ -48,6 +54,7 @@ def list_reddit(
     )
     if ticker:
         q = q.filter(Company.ticker == ticker.upper())
+    q = apply_date_range(q, RedditPost.created_at, start_date, end_date, is_datetime=True)
     rows = q.order_by(RedditPost.created_at.desc()).limit(limit).all()
     return [
         RedditPostOut(

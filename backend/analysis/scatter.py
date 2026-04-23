@@ -8,6 +8,7 @@ and Pearson/Spearman coefficients.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -42,12 +43,17 @@ class RegressionLine:
 
 
 def build(
-    s: Session, feature: str, target: str, n_boot: int = 500
+    s: Session,
+    feature: str,
+    target: str,
+    n_boot: int = 500,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> tuple[list[ScatterPoint], RegressionLine | None]:
     import numpy as np
     from scipy import stats
 
-    frame = load_frame(s)
+    frame = load_frame(s, start_date=start_date, end_date=end_date)
     xs, ys, rows = paired(frame, feature, target)
     points = [
         ScatterPoint(

@@ -5,16 +5,23 @@ feature set, using only rows where both columns are observed."""
 
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from .frame import FEATURE_COLS, load_frame
 
 
-def build(s: Session, method: str = "pearson") -> dict:
+def build(
+    s: Session,
+    method: str = "pearson",
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict:
     import numpy as np
     from scipy import stats
 
-    frame = load_frame(s)
+    frame = load_frame(s, start_date=start_date, end_date=end_date)
     if len(frame) < 3:
         return {"method": method, "features": list(FEATURE_COLS), "matrix": []}
 

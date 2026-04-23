@@ -13,6 +13,7 @@ missing values are imputed column-mean."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -132,8 +133,12 @@ def _fit(method: str, X, y, kept: list[str], target: str) -> RegressionFit | Non
     )
 
 
-def fit_all(s: Session) -> list[RegressionFit]:
-    frame = load_frame(s)
+def fit_all(
+    s: Session,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[RegressionFit]:
+    frame = load_frame(s, start_date=start_date, end_date=end_date)
     out: list[RegressionFit] = []
     for target in TARGET_COLS:
         kept, X, y = _prep_matrix(frame, target)

@@ -27,7 +27,11 @@ router = APIRouter(prefix="/api/briefing", tags=["briefing"])
 def get_briefing(db: Session = Depends(get_db)) -> BriefingResponse:
     # Underlying data
     universe = universe_route.list_universe(db)
-    events = events_route.list_events(db, limit=12)
+    # Pass explicit Nones for the new range params — Query(default=None)
+    # defaults only resolve via FastAPI's request machinery.
+    events = events_route.list_events(
+        db, start_date=None, end_date=None, limit=12
+    )
     macro = macro_route.list_macro(db)
     upcoming = earnings_route.upcoming(db, within_days=21)
 
