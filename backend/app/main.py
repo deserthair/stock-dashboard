@@ -6,6 +6,7 @@ from .db import Base, engine
 from .routes import (
     analysis,
     briefing,
+    commodities,
     companies,
     earnings,
     events,
@@ -15,6 +16,7 @@ from .routes import (
     macro,
     news,
     ops,
+    options,
     social,
     trends,
     universe,
@@ -60,4 +62,6 @@ app.include_router(jobs.router)
 app.include_router(analysis.router)
 app.include_router(hypotheses.router)
 app.include_router(trends.router)
+app.include_router(commodities.router)
+app.include_router(options.router)
 app.include_router(ops.router)

@@ -383,3 +383,51 @@ def test_fundamentals_non_dividend_payer(client):
 def test_fundamentals_unknown_ticker(client):
     r = client.get("/api/companies/ZZZ/fundamentals")
     assert r.status_code == 404
+
+
+# ---------- commodities + options ----------
+
+
+def test_commodities_list(client):
+    rows = client.get("/api/commodities").json()
+    assert len(rows) >= 10
+    symbols = {r["meta"]["symbol"] for r in rows}
+    for sym in ("LE=F", "HE=F", "ZC=F", "KC=F"):
+        assert sym in symbols
+    assert any(r["meta"]["source"] == "fred" for r in rows)
+
+
+def test_commodities_filter_by_category(client):
+    protein = client.get("/api/commodities?category=protein").json()
+    assert all(r["meta"]["category"] == "protein" for r in protein)
+    assert len(protein) >= 3
+
+
+def test_commodity_detail(client):
+    r = client.get("/api/commodities/LE=F")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["meta"]["label"] == "Live Cattle"
+    assert len(body["observations"]) >= 300
+    assert body["latest"] is not None
+
+
+def test_commodity_404(client):
+    r = client.get("/api/commodities/BOGUS=F")
+    assert r.status_code == 404
+
+
+def test_options_summary(client):
+    r = client.get("/api/options/CMG")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert body["latest"] is not None
+    assert body["latest"]["atm_iv"] is not None
+    assert len(body["history"]) >= 30
+    assert isinstance(body["iv_trend_30d_pct"], (int, float))
+
+
+def test_options_unknown_ticker(client):
+    r = client.get("/api/options/ZZZ")
+    assert r.status_code == 404

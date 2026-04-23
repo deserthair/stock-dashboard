@@ -47,6 +47,12 @@ export type TrendsSeriesOut = S["TrendsSeriesOut"];
 export type FundamentalRow = S["FundamentalRow"];
 export type QualityMetricsOut = S["QualityMetricsOut"];
 export type CompanyFundamentals = S["CompanyFundamentals"];
+export type CommodityMetaOut = S["CommodityMetaOut"];
+export type CommodityRow = S["CommodityRow"];
+export type CommodityPricePoint = S["CommodityPricePoint"];
+export type CommodityDetail = S["CommodityDetail"];
+export type OptionsSnapshotOut = S["OptionsSnapshotOut"];
+export type OptionsSummary = S["OptionsSummary"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

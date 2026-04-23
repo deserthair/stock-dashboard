@@ -37,6 +37,7 @@ from app.db import Base, engine
 from app.seed import run as seed_run
 from features import engineer as features_engineer
 from ingest.sources import (
+    commodities as src_commodities,
     earnings as src_earnings,
     email_imap as src_email,
     filings as src_filings,
@@ -44,6 +45,7 @@ from ingest.sources import (
     jobs as src_jobs,
     macro as src_macro,
     news_rss as src_news,
+    options as src_options,
     pr_pages as src_pr,
     prices as src_prices,
     reddit as src_reddit,
@@ -79,6 +81,10 @@ JOBS = [
     (src_trends.run_once,      "trends",       {"trigger": "cron", "day_of_week": "tue,fri", "hour": 3}),
     # Fundamentals only change on earnings cadence; daily is plenty.
     (src_fundamentals.run_once,"fundamentals", {"trigger": "cron", "hour": 4, "minute": 30}),
+    # Commodities (futures + PPI) refresh daily after the US overnight session.
+    (src_commodities.run_once, "commodities",  {"trigger": "cron", "hour": 6, "minute": 15}),
+    # Options snapshots end-of-day so volume/OI are final.
+    (src_options.run_once,     "options",      {"trigger": "cron", "hour": 22}),
 
     (norm_sentiment.run_once,  "sentiment",    {"trigger": "interval", "minutes": 30}),
     (norm_signals.run_once,    "signals",      {"trigger": "interval", "minutes": 30}),

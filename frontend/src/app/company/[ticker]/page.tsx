@@ -10,6 +10,7 @@ import { Financials } from "@/components/company/Financials";
 import { FilingsList } from "@/components/company/FilingsList";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
+import { OptionsActivity } from "@/components/company/OptionsActivity";
 import { PostmortemCard } from "@/components/company/PostmortemCard";
 import { PriceChart } from "@/components/company/PriceChart";
 import { SocialList } from "@/components/company/SocialList";
@@ -42,8 +43,9 @@ export default async function CompanyPage({
   let prices;
   let earnings;
   let fundamentals;
+  let optionsSummary;
   try {
-    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals, optionsSummary] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30, range).catch(() => []),
@@ -53,6 +55,7 @@ export default async function CompanyPage({
       api.companyPrices(params.ticker, 90).catch(() => ({ ticker: params.ticker.toUpperCase(), bars: [], markers: [] })),
       api.earningsAll({ ticker: params.ticker, past_only: true }, range).catch(() => []),
       api.companyFundamentals(params.ticker).catch(() => null),
+      api.optionsSummary(params.ticker).catch(() => null),
     ]);
   } catch {
     notFound();
@@ -235,6 +238,22 @@ export default async function CompanyPage({
                 <p className="text-[11px] text-fg-dim">
                   No fundamentals ingested yet. Run{" "}
                   <code>python -m ingest.sources.fundamentals</code>.
+                </p>
+              </Panel>
+            ),
+          },
+          {
+            id: "options",
+            label: optionsSummary?.latest
+              ? `Options (IV ${((optionsSummary.latest.atm_iv ?? 0) * 100).toFixed(0)}%)`
+              : "Options",
+            content: optionsSummary ? (
+              <OptionsActivity data={optionsSummary} />
+            ) : (
+              <Panel title="Options Activity">
+                <p className="text-[11px] text-fg-dim">
+                  No snapshots yet. Run{" "}
+                  <code>python -m ingest.sources.options</code>.
                 </p>
               </Panel>
             ),

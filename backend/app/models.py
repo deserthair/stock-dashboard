@@ -272,6 +272,56 @@ class TrendsObservation(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class CommodityMeta(Base):
+    """Metadata for a tracked food/energy commodity."""
+
+    __tablename__ = "commodity_meta"
+
+    symbol: Mapped[str] = mapped_column(String(16), primary_key=True)
+    label: Mapped[str] = mapped_column(String(64))
+    category: Mapped[str] = mapped_column(String(32))   # protein / grain / dairy / soft / energy
+    unit: Mapped[str | None] = mapped_column(String(16))
+    exposure: Mapped[list] = mapped_column(JSON, default=list)  # tickers most exposed
+    source: Mapped[str] = mapped_column(String(16), default="yfinance")
+    series_id: Mapped[str | None] = mapped_column(String(32))  # when source='fred'
+
+
+class CommodityPrice(Base):
+    """Daily close for a tracked commodity (futures settle or FRED series)."""
+
+    __tablename__ = "commodity_prices"
+
+    symbol: Mapped[str] = mapped_column(String(16), primary_key=True)
+    trade_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    close: Mapped[float | None] = mapped_column(Float)
+    volume: Mapped[int | None] = mapped_column(Integer)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OptionsSnapshot(Base):
+    """Daily aggregated options snapshot per underlying.
+
+    Captures front-expiry ATM IV, total call/put volume and open interest,
+    and put/call ratios. One row per (company, obs_date)."""
+
+    __tablename__ = "options_snapshots"
+
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.company_id"), primary_key=True
+    )
+    obs_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    expiry: Mapped[date | None] = mapped_column(Date)
+    underlying_price: Mapped[float | None] = mapped_column(Float)
+    atm_iv: Mapped[float | None] = mapped_column(Float)
+    total_call_volume: Mapped[int | None] = mapped_column(Integer)
+    total_put_volume: Mapped[int | None] = mapped_column(Integer)
+    total_call_oi: Mapped[int | None] = mapped_column(Integer)
+    total_put_oi: Mapped[int | None] = mapped_column(Integer)
+    put_call_volume_ratio: Mapped[float | None] = mapped_column(Float)
+    put_call_oi_ratio: Mapped[float | None] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Fundamental(Base):
     """Quarterly financial statement line items per company.
 

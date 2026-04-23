@@ -13,6 +13,8 @@ from datetime import date, datetime, timedelta, timezone
 from .db import Base, SessionLocal, engine
 from .models import (
     Briefing,
+    CommodityMeta,
+    CommodityPrice,
     Company,
     CompanySignal,
     Earnings,
@@ -21,6 +23,7 @@ from .models import (
     Event,
     Fundamental,
     MacroSeries,
+    OptionsSnapshot,
     PriceDaily,
     TrendsObservation,
     TrendsQuery,
@@ -506,6 +509,10 @@ def run() -> None:
         _seed_demo_trends(s, by_ticker)
         # --- demo quarterly fundamentals so /company/…/fundamentals renders without yfinance
         _seed_demo_fundamentals(s, by_ticker)
+        # --- demo commodity futures + PPI series
+        _seed_demo_commodities(s)
+        # --- demo options snapshots per company
+        _seed_demo_options(s, by_ticker)
         s.commit()
 
     # Run a one-shot correlation pass now that features exist so the
@@ -805,6 +812,123 @@ def _seed_demo_fundamentals(s, by_ticker: dict) -> None:
                     nopat=round(nopat, 0),
                     roic=round(roic, 4) if roic is not None else None,
                     source="seed:demo",
+                )
+            )
+
+
+COMMODITY_DEMO = [
+    # (symbol, label, category, unit, exposure, base_price, annual_drift_pct, amplitude, source, series_id)
+    ("LE=F",  "Live Cattle",    "protein", "cents/lb", ["TXRH","MCD","CMG"],   185.0, 0.08, 6.0, "yfinance", None),
+    ("GF=F",  "Feeder Cattle",  "protein", "cents/lb", ["TXRH","MCD"],         240.0, 0.10, 8.0, "yfinance", None),
+    ("HE=F",  "Lean Hogs",      "protein", "cents/lb", ["DPZ","SBUX","QSR"],    85.0, -0.02, 10.0,"yfinance", None),
+    ("ZC=F",  "Corn",           "grain",   "cents/bu", ["WING","CAVA","QSR"],  445.0, -0.01, 25.0,"yfinance", None),
+    ("ZS=F",  "Soybeans",       "grain",   "cents/bu", ["WING","CAVA","QSR"], 1050.0, -0.03, 40.0,"yfinance", None),
+    ("ZW=F",  "Wheat",          "grain",   "cents/bu", ["DPZ","SBUX"],         625.0,  0.02, 30.0,"yfinance", None),
+    ("KC=F",  "Coffee",         "soft",    "cents/lb", ["SBUX"],               395.0,  0.22, 20.0,"yfinance", None),
+    ("SB=F",  "Sugar",          "soft",    "cents/lb", ["SBUX","QSR"],          22.5, -0.05,  1.8,"yfinance", None),
+    ("OJ=F",  "Orange Juice",   "soft",    "cents/lb", ["SBUX"],               365.0,  0.12, 30.0,"yfinance", None),
+    ("DC=F",  "Class III Milk", "dairy",   "$/cwt",    ["SBUX","CMG"],          20.8,  0.03,  1.5,"yfinance", None),
+    ("CL=F",  "WTI Crude Oil",  "energy",  "$/bbl",    ["ALL"],                 75.0, -0.08,  6.0,"yfinance", None),
+    ("PPI_POULTRY",  "Poultry (PPI)",  "protein", "index", ["WING","CAVA","QSR"], 242.0, -0.04, 4.0, "fred", "WPU0211"),
+    ("PPI_LETTUCE",  "Lettuce (PPI)",  "produce", "index", ["CMG","CAVA","TXRH"], 318.0,  0.15, 40.0,"fred", "WPU01830302"),
+    ("PPI_TOMATOES", "Tomatoes (PPI)", "produce", "index", ["CMG","DPZ"],         285.0,  0.08, 22.0,"fred", "WPU01830306"),
+]
+
+
+def _seed_demo_commodities(s) -> None:
+    s.query(CommodityPrice).delete()
+    s.query(CommodityMeta).delete()
+    rng = random.Random(0xC0)
+    end = date(2026, 4, 20)
+    n_days = 365 * 3  # ~3 years
+
+    for (symbol, label, category, unit, exposure, base, drift, amp, source, series_id) in COMMODITY_DEMO:
+        meta = CommodityMeta(
+            symbol=symbol,
+            label=label,
+            category=category,
+            unit=unit,
+            exposure=exposure,
+            source=source,
+            series_id=series_id,
+        )
+        s.add(meta)
+        daily_drift = (1 + drift) ** (1 / 365) - 1
+
+        price = base / ((1 + drift) ** 3)  # 3y ago baseline
+        for i in range(n_days):
+            d = end - timedelta(days=n_days - 1 - i)
+            # Skip weekends to mimic CME settlements (PPI still writes daily; fine)
+            if source == "yfinance" and d.weekday() >= 5:
+                continue
+            seasonal = amp * math.sin((i / 60) + hash(symbol) % 7)
+            noise = rng.gauss(0, base * 0.004)
+            price = price * (1 + daily_drift) + (seasonal * 0.01 if symbol.endswith("=F") else 0) + noise
+            price = max(price, base * 0.25)
+            s.add(CommodityPrice(symbol=symbol, trade_date=d, close=round(price, 2), volume=None))
+
+
+OPTIONS_DEMO = {
+    # per-ticker (current IV, current P/C vol, trend_iv_pct_30d, trend_pc_pct_30d)
+    "CMG":  (0.34, 0.82, 8.0, 12.0),     # elevated IV into earnings
+    "SBUX": (0.31, 1.05, -3.0, 25.0),   # P/C ratio creeping up (bearish positioning)
+    "MCD":  (0.21, 0.75, -1.0, -2.0),   # boring/stable
+    "CAVA": (0.45, 0.62, 14.0, -5.0),   # very elevated IV
+    "TXRH": (0.28, 0.95, 2.0, 18.0),
+    "WING": (0.38, 0.68, 6.0, 4.0),
+    "DPZ":  (0.23, 0.85, 0.0, 6.0),
+    "QSR":  (0.19, 0.72, -2.0, 3.0),
+}
+
+
+def _seed_demo_options(s, by_ticker: dict) -> None:
+    s.query(OptionsSnapshot).delete()
+    rng = random.Random(0x0B7)
+    end = date(2026, 4, 20)
+    n_days = 90  # 3 months of daily snapshots
+    # Approximate next monthly expiry ≈ 30d out
+    expiry = end + timedelta(days=30)
+
+    for ticker, (cur_iv, cur_pc, iv_trend, pc_trend) in OPTIONS_DEMO.items():
+        company = by_ticker.get(ticker)
+        if company is None:
+            continue
+        sig = s.get(CompanySignal, company.company_id)
+        underlying = float(sig.last_price) if sig and sig.last_price else 100.0
+
+        # Walk backward so latest day = target values, 30d-ago = target / (1+trend%)
+        iv_30d_ago = cur_iv / (1 + iv_trend / 100)
+        pc_30d_ago = cur_pc / (1 + pc_trend / 100)
+
+        for i in range(n_days):
+            d = end - timedelta(days=n_days - 1 - i)
+            # Linear interpolate IV + PC with noise, anchored at day 60 (30d ago)
+            if i >= n_days - 30:
+                frac = (i - (n_days - 30)) / 30  # 0 → 1 over the last 30 days
+                iv = iv_30d_ago + (cur_iv - iv_30d_ago) * frac
+                pc = pc_30d_ago + (cur_pc - pc_30d_ago) * frac
+            else:
+                iv = iv_30d_ago * (1 + rng.gauss(0, 0.02))
+                pc = pc_30d_ago * (1 + rng.gauss(0, 0.04))
+            iv = max(0.05, iv + rng.gauss(0, 0.005))
+            pc = max(0.2, pc + rng.gauss(0, 0.02))
+            call_vol = int(rng.uniform(8000, 22000))
+            put_vol = int(call_vol * pc)
+            call_oi = int(rng.uniform(60000, 200000))
+            put_oi = int(call_oi * pc * 0.9)
+            s.add(
+                OptionsSnapshot(
+                    company_id=company.company_id,
+                    obs_date=d,
+                    expiry=expiry,
+                    underlying_price=round(underlying, 2),
+                    atm_iv=round(iv, 4),
+                    total_call_volume=call_vol,
+                    total_put_volume=put_vol,
+                    total_call_oi=call_oi,
+                    total_put_oi=put_oi,
+                    put_call_volume_ratio=round(put_vol / call_vol, 3) if call_vol else None,
+                    put_call_oi_ratio=round(put_oi / call_oi, 3) if call_oi else None,
                 )
             )
 

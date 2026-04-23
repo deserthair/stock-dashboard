@@ -1,6 +1,8 @@
 import type {
   AnalysisAxesResponse,
   BriefingResponse,
+  CommodityDetail,
+  CommodityRow,
   CompanyDetail,
   CompanyFundamentals,
   CompanyPriceHistory,
@@ -16,6 +18,7 @@ import type {
   MacroRow,
   MacroSeriesDetail,
   NewsItemOut,
+  OptionsSummary,
   RedditPostOut,
   RegressionFitOut,
   ScatterResponse,
@@ -70,6 +73,24 @@ export const api = {
     get<CompanyFundamentals>(
       `/api/companies/${ticker.toUpperCase()}/fundamentals`,
       600,
+    ),
+
+  commodities: (category?: string) =>
+    get<CommodityRow[]>(
+      `/api/commodities${category ? `?category=${encodeURIComponent(category)}` : ""}`,
+      600,
+    ),
+
+  commodityDetail: (symbol: string, range?: DateRange) =>
+    get<CommodityDetail>(
+      withRange(`/api/commodities/${encodeURIComponent(symbol)}`, range),
+      600,
+    ),
+
+  optionsSummary: (ticker: string, limit = 60) =>
+    get<OptionsSummary>(
+      `/api/options/${ticker.toUpperCase()}?limit=${limit}`,
+      300,
     ),
 
   news: (ticker?: string, limit = 50, range?: DateRange) =>

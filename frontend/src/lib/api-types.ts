@@ -466,6 +466,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/commodities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Commodities */
+        get: operations["list_commodities_api_commodities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/commodities/{symbol}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Commodity */
+        get: operations["get_commodity_api_commodities__symbol__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/options/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Options Summary */
+        get: operations["get_options_summary_api_options__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/source-runs": {
         parameters: {
             query?: never;
@@ -555,6 +606,63 @@ export interface components {
             value: number;
             /** Abs Value */
             abs_value: number;
+        };
+        /** CommodityDetail */
+        CommodityDetail: {
+            meta: components["schemas"]["CommodityMetaOut"];
+            /** Observations */
+            observations: components["schemas"]["CommodityPricePoint"][];
+            /** Latest */
+            latest: number | null;
+            /** Latest Date */
+            latest_date: string | null;
+            /** Change 30D Pct */
+            change_30d_pct: number | null;
+            /** Change 90D Pct */
+            change_90d_pct: number | null;
+            /** Change 1Y Pct */
+            change_1y_pct: number | null;
+        };
+        /** CommodityMetaOut */
+        CommodityMetaOut: {
+            /** Symbol */
+            symbol: string;
+            /** Label */
+            label: string;
+            /** Category */
+            category: string;
+            /** Unit */
+            unit: string | null;
+            /** Exposure */
+            exposure: string[];
+            /** Source */
+            source: string;
+            /** Series Id */
+            series_id: string | null;
+        };
+        /** CommodityPricePoint */
+        CommodityPricePoint: {
+            /**
+             * Trade Date
+             * Format: date
+             */
+            trade_date: string;
+            /** Close */
+            close: number | null;
+        };
+        /** CommodityRow */
+        CommodityRow: {
+            meta: components["schemas"]["CommodityMetaOut"];
+            /** Latest */
+            latest: number | null;
+            /** Latest Date */
+            latest_date: string | null;
+            /** Change 30D Pct */
+            change_30d_pct: number | null;
+            /** Change 90D Pct */
+            change_90d_pct: number | null;
+            /** Change 1Y Pct */
+            change_1y_pct: number | null;
         };
         /** CompanyDetail */
         CompanyDetail: {
@@ -961,6 +1069,48 @@ export interface components {
             relevance_score: number | null;
             /** Topics */
             topics: string[];
+        };
+        /** OptionsSnapshotOut */
+        OptionsSnapshotOut: {
+            /** Company Id */
+            company_id: number;
+            /** Ticker */
+            ticker: string;
+            /**
+             * Obs Date
+             * Format: date
+             */
+            obs_date: string;
+            /** Expiry */
+            expiry: string | null;
+            /** Underlying Price */
+            underlying_price: number | null;
+            /** Atm Iv */
+            atm_iv: number | null;
+            /** Total Call Volume */
+            total_call_volume: number | null;
+            /** Total Put Volume */
+            total_put_volume: number | null;
+            /** Total Call Oi */
+            total_call_oi: number | null;
+            /** Total Put Oi */
+            total_put_oi: number | null;
+            /** Put Call Volume Ratio */
+            put_call_volume_ratio: number | null;
+            /** Put Call Oi Ratio */
+            put_call_oi_ratio: number | null;
+        };
+        /** OptionsSummary */
+        OptionsSummary: {
+            /** Ticker */
+            ticker: string;
+            latest: components["schemas"]["OptionsSnapshotOut"] | null;
+            /** Iv Trend 30D Pct */
+            iv_trend_30d_pct: number | null;
+            /** Pc Vol Trend 30D Pct */
+            pc_vol_trend_30d_pct: number | null;
+            /** History */
+            history: components["schemas"]["OptionsSnapshotOut"][];
         };
         /** PriceBar */
         PriceBar: {
@@ -2127,6 +2277,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrendsSeriesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_commodities_api_commodities_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommodityRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_commodity_api_commodities__symbol__get: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+            };
+            header?: never;
+            path: {
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommodityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_options_summary_api_options__ticker__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptionsSummary"];
                 };
             };
             /** @description Validation Error */

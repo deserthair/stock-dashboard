@@ -365,6 +365,69 @@ class CompanyFundamentals(BaseModel):
     quarterly: list[FundamentalRow]
 
 
+# ---------- commodities ----------
+
+
+class CommodityMetaOut(BaseModel):
+    symbol: str
+    label: str
+    category: str
+    unit: str | None
+    exposure: list[str]
+    source: str
+    series_id: str | None
+
+
+class CommodityRow(BaseModel):
+    meta: CommodityMetaOut
+    latest: float | None
+    latest_date: date | None
+    change_30d_pct: float | None
+    change_90d_pct: float | None
+    change_1y_pct: float | None
+
+
+class CommodityPricePoint(BaseModel):
+    trade_date: date
+    close: float | None
+
+
+class CommodityDetail(BaseModel):
+    meta: CommodityMetaOut
+    observations: list[CommodityPricePoint]
+    latest: float | None
+    latest_date: date | None
+    change_30d_pct: float | None
+    change_90d_pct: float | None
+    change_1y_pct: float | None
+
+
+# ---------- options ----------
+
+
+class OptionsSnapshotOut(BaseModel):
+    company_id: int
+    ticker: str
+    obs_date: date
+    expiry: date | None
+    underlying_price: float | None
+    atm_iv: float | None
+    total_call_volume: int | None
+    total_put_volume: int | None
+    total_call_oi: int | None
+    total_put_oi: int | None
+    put_call_volume_ratio: float | None
+    put_call_oi_ratio: float | None
+
+
+class OptionsSummary(BaseModel):
+    ticker: str
+    latest: OptionsSnapshotOut | None
+    iv_trend_30d_pct: float | None           # % change in ATM IV
+    pc_vol_trend_30d_pct: float | None       # % change in put/call ratio
+    history: list[OptionsSnapshotOut]
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int
