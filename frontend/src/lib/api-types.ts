@@ -347,6 +347,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/attribution/{earnings_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Attribution */
+        get: operations["get_attribution_api_analysis_attribution__earnings_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/regression": {
         parameters: {
             query?: never;
@@ -561,6 +578,28 @@ export interface components {
             /** Hypothesis Label */
             hypothesis_label: string | null;
         };
+        /** EventAttributionResponse */
+        EventAttributionResponse: {
+            /** Earnings Id */
+            earnings_id: number;
+            /** Ticker */
+            ticker: string;
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            /** Target */
+            target: string;
+            /** Prediction */
+            prediction: number;
+            /** Intercept */
+            intercept: number;
+            /** R Squared */
+            r_squared: number;
+            /** Contributions */
+            contributions: components["schemas"]["FeatureContribution"][];
+        };
         /** EventOut */
         EventOut: {
             /** Ticker */
@@ -580,6 +619,17 @@ export interface components {
             description: string;
             /** Time Label */
             time_label: string;
+        };
+        /** FeatureContribution */
+        FeatureContribution: {
+            /** Feature */
+            feature: string;
+            /** Value */
+            value: number;
+            /** Coefficient */
+            coefficient: number;
+            /** Contribution */
+            contribution: number;
         };
         /** FeatureVectorOut */
         FeatureVectorOut: {
@@ -660,6 +710,11 @@ export interface components {
             post_earnings_1d_return: number | null;
             /** Prediction Correct */
             prediction_correct: boolean | null;
+            /**
+             * Top Drivers
+             * @default []
+             */
+            top_drivers: components["schemas"]["FeatureContribution"][];
         };
         /** HypothesisTrackerSummary */
         HypothesisTrackerSummary: {
@@ -1615,6 +1670,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HeatmapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_attribution_api_analysis_attribution__earnings_id__get: {
+        parameters: {
+            query?: {
+                target?: string;
+                start_date?: string | null;
+                end_date?: string | null;
+            };
+            header?: never;
+            path: {
+                earnings_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAttributionResponse"];
                 };
             };
             /** @description Validation Error */

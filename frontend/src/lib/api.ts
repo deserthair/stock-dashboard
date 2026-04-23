@@ -5,6 +5,7 @@ import type {
   CompanyPriceHistory,
   CorrelationOut,
   EarningsRow,
+  EventAttributionResponse,
   EventOut,
   FilingOut,
   HeatmapResponse,
@@ -163,6 +164,12 @@ export const api = {
 
   regression: (range?: DateRange) =>
     get<RegressionFitOut[]>(withRange("/api/analysis/regression", range), 600),
+
+  attribution: (earningsId: number, target = "eps_surprise_pct") =>
+    get<EventAttributionResponse>(
+      `/api/analysis/attribution/${earningsId}?target=${encodeURIComponent(target)}`,
+      600,
+    ),
 
   macroSeries: async (seriesId: string, days = 365) => {
     const raw = await get<MacroSeriesDetail>(

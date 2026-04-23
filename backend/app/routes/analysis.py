@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from analysis import heatmap as analysis_heatmap
 from analysis import regression as analysis_regression
 from analysis import scatter as analysis_scatter
+from analysis.attribution import build_attributions
 from analysis.frame import FEATURE_COLS, TARGET_COLS
 
 from ..db import get_db
@@ -12,6 +13,8 @@ from ..schemas import (
     AnalysisAxesResponse,
     CoefficientOut,
     CorrelationOut,
+    EventAttributionResponse,
+    FeatureContribution,
     FeatureVectorOut,
     HeatmapResponse,
     RegressionFitOut,
@@ -131,6 +134,48 @@ def get_heatmap(
     s, e = parse_range(start_date, end_date)
     data = analysis_heatmap.build(db, method=method, start_date=s, end_date=e)
     return HeatmapResponse(**data)
+
+
+@router.get("/attribution/{earnings_id}", response_model=EventAttributionResponse)
+def get_attribution(
+    earnings_id: int,
+    target: str = Query(default="eps_surprise_pct"),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> EventAttributionResponse:
+    if target not in TARGET_COLS:
+        raise HTTPException(status_code=400, detail=f"Unknown target {target}")
+    s, e = parse_range(start_date, end_date)
+    attrs = build_attributions(db, target=target, start_date=s, end_date=e)
+    attr = attrs.get(earnings_id)
+    if attr is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No attribution available for earnings_id {earnings_id}; "
+                   "the Lasso fit dropped this event or it lacks all kept features.",
+        )
+    earn_row = db.query(Earnings).filter_by(earnings_id=earnings_id).one_or_none()
+    if earn_row is None:
+        raise HTTPException(status_code=404, detail=f"Unknown earnings_id {earnings_id}")
+    return EventAttributionResponse(
+        earnings_id=attr.earnings_id,
+        ticker=attr.ticker,
+        report_date=earn_row.report_date,
+        target=target,
+        prediction=attr.prediction,
+        intercept=attr.intercept,
+        r_squared=attr.r_squared,
+        contributions=[
+            FeatureContribution(
+                feature=c.feature,
+                value=round(c.value, 4),
+                coefficient=round(c.coefficient, 4),
+                contribution=round(c.contribution, 4),
+            )
+            for c in attr.contributions
+        ],
+    )
 
 
 @router.get("/regression", response_model=list[RegressionFitOut])

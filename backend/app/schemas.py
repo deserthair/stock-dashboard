@@ -252,6 +252,27 @@ class HypothesisTrackerRow(BaseModel):
     eps_surprise_pct: float | None
     post_earnings_1d_return: float | None
     prediction_correct: bool | None
+    # Top per-feature contributions to the predicted eps_surprise_pct for
+    # this event (sign + magnitude; only the 5 largest-|contribution| ones).
+    top_drivers: list["FeatureContribution"] = []
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float
+    coefficient: float
+    contribution: float
+
+
+class EventAttributionResponse(BaseModel):
+    earnings_id: int
+    ticker: str
+    report_date: date
+    target: str
+    prediction: float
+    intercept: float
+    r_squared: float
+    contributions: list[FeatureContribution]
 
 
 class HypothesisTrackerSummary(BaseModel):

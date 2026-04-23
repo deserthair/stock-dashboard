@@ -9,12 +9,17 @@ accuracy."""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from analysis.attribution import build_attributions
 from analysis.outcomes import compute as compute_outcome
 
 from ..db import get_db
 from ..models import Company, Earnings
-from ..schemas import HypothesisTrackerRow, HypothesisTrackerSummary
-from ._filters import apply_date_range
+from ..schemas import (
+    FeatureContribution,
+    HypothesisTrackerRow,
+    HypothesisTrackerSummary,
+)
+from ._filters import apply_date_range, parse_range
 
 router = APIRouter(prefix="/api/hypotheses", tags=["hypotheses"])
 
@@ -45,6 +50,11 @@ def list_hypotheses(
     q = apply_date_range(q, Earnings.report_date, start_date, end_date, is_datetime=False)
     rows = q.order_by(Earnings.report_date.desc()).all()
 
+    # Fit Lasso once and decompose each event's prediction so the tracker
+    # can surface the top 5 per-feature drivers per row.
+    start, end = parse_range(start_date, end_date)
+    attributions = build_attributions(db, start_date=start, end_date=end)
+
     tracker: list[HypothesisTrackerRow] = []
     scored = 0
     correct = 0
@@ -60,6 +70,19 @@ def list_hypotheses(
             if predict_correct:
                 correct += 1
 
+        drivers: list[FeatureContribution] = []
+        attr = attributions.get(e.earnings_id)
+        if attr is not None:
+            for c in attr.contributions[:5]:
+                drivers.append(
+                    FeatureContribution(
+                        feature=c.feature,
+                        value=round(c.value, 4),
+                        coefficient=round(c.coefficient, 4),
+                        contribution=round(c.contribution, 4),
+                    )
+                )
+
         tracker.append(
             HypothesisTrackerRow(
                 ticker=company.ticker,
@@ -72,6 +95,7 @@ def list_hypotheses(
                 eps_surprise_pct=oc.eps_surprise_pct,
                 post_earnings_1d_return=oc.post_earnings_1d_return,
                 prediction_correct=predict_correct,
+                top_drivers=drivers,
             )
         )
 

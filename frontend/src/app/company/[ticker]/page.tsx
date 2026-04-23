@@ -5,6 +5,7 @@ import { Shell } from "@/components/layout/Shell";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
+import { EarningsHistory } from "@/components/company/EarningsHistory";
 import { FilingsList } from "@/components/company/FilingsList";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
@@ -36,8 +37,9 @@ export default async function CompanyPage({
   let social;
   let jobs;
   let prices;
+  let earnings;
   try {
-    [company, universe, news, filings, social, jobs, prices] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices, earnings] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30, range).catch(() => []),
@@ -45,6 +47,7 @@ export default async function CompanyPage({
       api.social(params.ticker, 30, range).catch(() => []),
       api.jobs(params.ticker, 12, range).catch(() => []),
       api.companyPrices(params.ticker, 90).catch(() => ({ ticker: params.ticker.toUpperCase(), bars: [], markers: [] })),
+      api.earningsAll({ ticker: params.ticker, past_only: true }, range).catch(() => []),
     ]);
   } catch {
     notFound();
@@ -167,6 +170,7 @@ export default async function CompanyPage({
       <Tabs
         tabs={[
           { id: "overview", label: "Overview", content: overviewTab },
+          { id: "earnings", label: `Earnings History (${earnings.length})`, content: <EarningsHistory rows={earnings} /> },
           { id: "news",     label: `News (${news.length})`,     content: <NewsList items={news} /> },
           { id: "social",   label: `Social (${social.length})`, content: <SocialList items={social} /> },
           { id: "filings",  label: `Filings (${filings.length})`, content: <FilingsList items={filings} /> },
