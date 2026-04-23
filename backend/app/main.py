@@ -3,7 +3,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import Base, engine
-from .routes import briefing, companies, earnings, events, macro, universe
+from .routes import (
+    analysis,
+    briefing,
+    companies,
+    earnings,
+    events,
+    filings,
+    jobs,
+    macro,
+    news,
+    ops,
+    social,
+    universe,
+)
 
 settings = get_settings()
 
@@ -38,3 +51,9 @@ app.include_router(events.router)
 app.include_router(earnings.router)
 app.include_router(macro.router)
 app.include_router(companies.router)
+app.include_router(news.router)
+app.include_router(filings.router)
+app.include_router(social.router)
+app.include_router(jobs.router)
+app.include_router(analysis.router)
+app.include_router(ops.router)

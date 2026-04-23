@@ -107,3 +107,91 @@ class BriefingResponse(BaseModel):
     universe: list[UniverseRow]
     macro: list[MacroRow]
     upcoming_earnings: list[UpcomingEarnings]
+
+
+# ---------- new ----------
+
+
+class NewsItemOut(BaseModel):
+    news_id: int
+    ticker: str | None
+    source: str
+    url: str
+    published_at: datetime | None
+    fetched_at: datetime
+    headline: str
+    publisher: str | None
+    sentiment_score: float | None
+    relevance_score: float | None
+    topics: list[str]
+
+
+class SocialPostOut(BaseModel):
+    post_id: int
+    ticker: str | None
+    platform: str
+    account: str | None
+    posted_at: datetime | None
+    content: str
+    engagement: dict
+    sentiment_score: float | None
+
+
+class RedditPostOut(BaseModel):
+    post_id: str
+    ticker: str | None
+    subreddit: str
+    created_at: datetime
+    title: str
+    score: int
+    num_comments: int
+    url: str | None
+    sentiment_score: float | None
+
+
+class FilingOut(BaseModel):
+    filing_id: int
+    ticker: str
+    filing_type: str
+    filed_at: datetime
+    primary_doc_url: str | None
+    item_numbers: list[str]
+    title: str | None
+
+
+class JobsSnapshotOut(BaseModel):
+    snapshot_date: date
+    ticker: str
+    total_count: int | None
+    corporate_count: int | None
+    by_department: dict
+    by_location: dict
+
+
+class CorrelationOut(BaseModel):
+    feature_name: str
+    target_name: str
+    method: str
+    n: int
+    coefficient: float | None
+    ci_low: float | None
+    ci_high: float | None
+    p_value: float | None
+    p_adjusted: float | None
+
+
+class FeatureVectorOut(BaseModel):
+    earnings_id: int
+    ticker: str
+    report_date: date
+    feature_version: str
+    values: dict  # {feature_name: value}
+
+
+class SourceRunOut(BaseModel):
+    source_name: str
+    started_at: datetime
+    ended_at: datetime | None
+    status: str
+    rows_fetched: int
+    error_msg: str | None

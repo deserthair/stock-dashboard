@@ -1,9 +1,23 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
+
+
+# ---------- company + market data ----------
 
 
 class Company(Base):
@@ -18,6 +32,8 @@ class Company(Base):
     careers_url: Mapped[str | None] = mapped_column(String(256))
     x_handle: Mapped[str | None] = mapped_column(String(64))
     ceo_name: Mapped[str | None] = mapped_column(String(128))
+    cik: Mapped[str | None] = mapped_column(String(16))  # SEC CIK, 10-digit padded
+    pr_page_url: Mapped[str | None] = mapped_column(String(256))
 
     prices: Mapped[list["PriceDaily"]] = relationship(back_populates="company")
     earnings: Mapped[list["Earnings"]] = relationship(back_populates="company")
@@ -51,13 +67,15 @@ class Earnings(Base):
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"))
     report_date: Mapped[date] = mapped_column(Date, nullable=False)
     fiscal_period: Mapped[str | None] = mapped_column(String(16))
-    time_of_day: Mapped[str | None] = mapped_column(String(4))  # BMO / AMC
+    time_of_day: Mapped[str | None] = mapped_column(String(4))
     eps_estimate: Mapped[float | None] = mapped_column(Float)
     eps_actual: Mapped[float | None] = mapped_column(Float)
     revenue_estimate: Mapped[float | None] = mapped_column(Float)
     revenue_actual: Mapped[float | None] = mapped_column(Float)
     eps_surprise_pct: Mapped[float | None] = mapped_column(Float)
     hypothesis_score: Mapped[float | None] = mapped_column(Float)
+
+    __table_args__ = (UniqueConstraint("company_id", "report_date", name="uq_earnings_co_date"),)
 
     company: Mapped[Company] = relationship(back_populates="earnings")
 
@@ -70,28 +88,241 @@ class Event(Base):
     ticker_label: Mapped[str] = mapped_column(String(16))
     event_type: Mapped[str] = mapped_column(String(32))
     event_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    severity: Mapped[str] = mapped_column(String(4), default="lo")  # hi / md / lo
+    severity: Mapped[str] = mapped_column(String(4), default="lo")
     source: Mapped[str | None] = mapped_column(String(32))
     description: Mapped[str] = mapped_column(String(512))
+    source_ref: Mapped[str | None] = mapped_column(String(256))  # FK-ish external id
 
     company: Mapped[Company | None] = relationship(back_populates="events")
 
 
+# ---------- macro ----------
+
+
 class MacroSeries(Base):
+    """Metadata + latest aggregate for each FRED series (drives the macro panel)."""
+
     __tablename__ = "macro_series"
 
     series_id: Mapped[str] = mapped_column(String(32), primary_key=True)
     label: Mapped[str] = mapped_column(String(64))
     latest_value: Mapped[float | None] = mapped_column(Float)
+    latest_date: Mapped[date | None] = mapped_column(Date)
     change_90d_pct: Mapped[float | None] = mapped_column(Float)
     change_label: Mapped[str | None] = mapped_column(String(16))
-    direction: Mapped[str] = mapped_column(String(4), default="flat")  # up / down / flat
+    direction: Mapped[str] = mapped_column(String(4), default="flat")
     bar_width_pct: Mapped[float] = mapped_column(Float, default=0.0)
 
 
-class CompanySignal(Base):
-    """Denormalized per-company row that powers the universe matrix."""
+class MacroObservation(Base):
+    """Full time series; one row per (series_id, date)."""
 
+    __tablename__ = "macro_observations"
+
+    series_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    obs_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    value: Mapped[float | None] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# ---------- news + social + emails ----------
+
+
+class NewsItem(Base):
+    __tablename__ = "news"
+
+    news_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.company_id"))
+    source: Mapped[str] = mapped_column(String(32))  # google_rss / pr_page / email_alert
+    url: Mapped[str] = mapped_column(String(512))
+    url_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    headline: Mapped[str] = mapped_column(String(512))
+    body: Mapped[str | None] = mapped_column(Text)
+    publisher: Mapped[str | None] = mapped_column(String(128))
+    sentiment_score: Mapped[float | None] = mapped_column(Float)
+    sentiment_confidence: Mapped[float | None] = mapped_column(Float)
+    relevance_score: Mapped[float | None] = mapped_column(Float)
+    topics: Mapped[list] = mapped_column(JSON, default=list)
+
+
+class RedditPost(Base):
+    __tablename__ = "reddit_posts"
+
+    post_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    subreddit: Mapped[str] = mapped_column(String(64))
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.company_id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    title: Mapped[str] = mapped_column(String(512))
+    body: Mapped[str | None] = mapped_column(Text)
+    url: Mapped[str | None] = mapped_column(String(512))
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    num_comments: Mapped[int] = mapped_column(Integer, default=0)
+    ticker_mentions: Mapped[list] = mapped_column(JSON, default=list)
+    sentiment_score: Mapped[float | None] = mapped_column(Float)
+
+
+class SocialPost(Base):
+    __tablename__ = "social_posts"
+
+    post_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.company_id"))
+    platform: Mapped[str] = mapped_column(String(16))  # reddit / x / ig / linkedin
+    account: Mapped[str | None] = mapped_column(String(128))
+    external_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    content: Mapped[str] = mapped_column(Text)
+    engagement: Mapped[dict] = mapped_column(JSON, default=dict)
+    sentiment_score: Mapped[float | None] = mapped_column(Float)
+    is_company_official: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class EmailMessage(Base):
+    __tablename__ = "email_messages"
+
+    message_id: Mapped[str] = mapped_column(String(256), primary_key=True)
+    from_addr: Mapped[str | None] = mapped_column(String(256))
+    subject: Mapped[str | None] = mapped_column(String(512))
+    received_at: Mapped[datetime] = mapped_column(DateTime)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    body_text: Mapped[str | None] = mapped_column(Text)
+    source_type: Mapped[str | None] = mapped_column(String(32))  # google_alert / sa / x / reddit_digest / ir
+    ticker_mentions: Mapped[list] = mapped_column(JSON, default=list)
+    processed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+# ---------- filings + jobs + weather ----------
+
+
+class Filing(Base):
+    __tablename__ = "filings"
+
+    filing_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"))
+    filing_type: Mapped[str] = mapped_column(String(16))  # 10-K / 10-Q / 8-K / DEF 14A
+    accession_number: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    filed_at: Mapped[datetime] = mapped_column(DateTime)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    primary_doc_url: Mapped[str | None] = mapped_column(String(512))
+    item_numbers: Mapped[list] = mapped_column(JSON, default=list)  # 8-K items
+    title: Mapped[str | None] = mapped_column(String(256))
+
+
+class JobsSnapshot(Base):
+    __tablename__ = "jobs_snapshots"
+
+    snapshot_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"))
+    snapshot_date: Mapped[date] = mapped_column(Date)
+    total_count: Mapped[int | None] = mapped_column(Integer)
+    corporate_count: Mapped[int | None] = mapped_column(Integer)
+    by_department: Mapped[dict] = mapped_column(JSON, default=dict)
+    by_location: Mapped[dict] = mapped_column(JSON, default=dict)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "snapshot_date", name="uq_jobs_co_date"),
+    )
+
+
+class WeatherObservation(Base):
+    __tablename__ = "weather_observations"
+
+    station_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    obs_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    tavg_f: Mapped[float | None] = mapped_column(Float)
+    tmax_f: Mapped[float | None] = mapped_column(Float)
+    tmin_f: Mapped[float | None] = mapped_column(Float)
+    prcp_in: Mapped[float | None] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# ---------- features + analytics ----------
+
+
+class EarningsFeature(Base):
+    __tablename__ = "features_earnings"
+
+    feature_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    earnings_id: Mapped[int] = mapped_column(ForeignKey("earnings.earnings_id"))
+    feature_version: Mapped[str] = mapped_column(String(16), default="v0")
+    computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    return_30d: Mapped[float | None] = mapped_column(Float)
+    volatility_30d: Mapped[float | None] = mapped_column(Float)
+    volume_trend_30d: Mapped[float | None] = mapped_column(Float)
+    rs_30d: Mapped[float | None] = mapped_column(Float)
+
+    news_sentiment_mean_30d: Mapped[float | None] = mapped_column(Float)
+    news_sentiment_trend_30d: Mapped[float | None] = mapped_column(Float)
+    news_volume_30d: Mapped[int | None] = mapped_column(Integer)
+    news_volume_z: Mapped[float | None] = mapped_column(Float)
+
+    social_sentiment_mean_30d: Mapped[float | None] = mapped_column(Float)
+    social_volume_30d: Mapped[int | None] = mapped_column(Integer)
+
+    jobs_count_change_90d: Mapped[float | None] = mapped_column(Float)
+    jobs_corporate_change_90d: Mapped[float | None] = mapped_column(Float)
+
+    filings_8k_count_30d: Mapped[int | None] = mapped_column(Integer)
+    filings_exec_change: Mapped[bool | None] = mapped_column(Boolean)
+
+    beef_change_90d: Mapped[float | None] = mapped_column(Float)
+    chicken_change_90d: Mapped[float | None] = mapped_column(Float)
+    wheat_change_90d: Mapped[float | None] = mapped_column(Float)
+    gas_change_90d: Mapped[float | None] = mapped_column(Float)
+    cons_sentiment_level: Mapped[float | None] = mapped_column(Float)
+    cons_sentiment_change_90d: Mapped[float | None] = mapped_column(Float)
+    unemployment_change_90d: Mapped[float | None] = mapped_column(Float)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "earnings_id", "feature_version", name="uq_features_earn_ver"
+        ),
+    )
+
+
+class Correlation(Base):
+    __tablename__ = "correlations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    feature_name: Mapped[str] = mapped_column(String(64))
+    target_name: Mapped[str] = mapped_column(String(64))
+    method: Mapped[str] = mapped_column(String(16))  # pearson / spearman
+    n: Mapped[int] = mapped_column(Integer)
+    coefficient: Mapped[float | None] = mapped_column(Float)
+    ci_low: Mapped[float | None] = mapped_column(Float)
+    ci_high: Mapped[float | None] = mapped_column(Float)
+    p_value: Mapped[float | None] = mapped_column(Float)
+    p_adjusted: Mapped[float | None] = mapped_column(Float)
+    feature_version: Mapped[str] = mapped_column(String(16), default="v0")
+    computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# ---------- operational ----------
+
+
+class SourceRun(Base):
+    """Health tracking for each ingest run."""
+
+    __tablename__ = "source_runs"
+
+    run_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source_name: Mapped[str] = mapped_column(String(64))
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(16), default="running")  # running / success / failed / skipped
+    rows_fetched: Mapped[int] = mapped_column(Integer, default=0)
+    error_msg: Mapped[str | None] = mapped_column(Text)
+
+
+# ---------- denormalized signal row (drives universe matrix) ----------
+
+
+class CompanySignal(Base):
     __tablename__ = "company_signals"
 
     company_id: Mapped[int] = mapped_column(
@@ -111,6 +342,7 @@ class CompanySignal(Base):
     jobs_change_30d_pct: Mapped[float | None] = mapped_column(Float)
     hypothesis_label: Mapped[str | None] = mapped_column(String(16))
     hypothesis_score: Mapped[float | None] = mapped_column(Float)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     company: Mapped[Company] = relationship(back_populates="signals")
 
@@ -121,4 +353,4 @@ class Briefing(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, default=0)
-    sections: Mapped[list] = mapped_column(JSON)  # list of {heading, body}
+    sections: Mapped[list] = mapped_column(JSON)

@@ -13,6 +13,15 @@ dependencies = [
     "httpx>=0.27",
     "apscheduler>=3.10",
     "yfinance>=0.2.40",
+    "feedparser>=6.0",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.2",
+    "imap-tools>=1.7",
+    "anthropic>=0.40",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "statsmodels>=0.14",
 ]
 
 [project.optional-dependencies]
@@ -24,7 +33,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["app*", "ingest*"]
+include = ["app*", "ingest*", "normalize*", "features*", "analysis*"]
 
 [tool.ruff]
 line-length = 100

@@ -28,6 +28,8 @@ UNIVERSE = [
         "careers_url": "https://jobs.chipotle.com",
         "x_handle": "ChipotleTweets",
         "ceo_name": "Scott Boatwright",
+        "cik": "0001058090",
+        "pr_page_url": "https://ir.chipotle.com/press-releases",
     },
     {
         "ticker": "SBUX",
@@ -38,6 +40,8 @@ UNIVERSE = [
         "careers_url": "https://careers.starbucks.com",
         "x_handle": "Starbucks",
         "ceo_name": "Brian Niccol",
+        "cik": "0000829224",
+        "pr_page_url": "https://investor.starbucks.com/press-releases",
     },
     {
         "ticker": "MCD",
@@ -48,6 +52,8 @@ UNIVERSE = [
         "careers_url": "https://careers.mcdonalds.com",
         "x_handle": "McDonalds",
         "ceo_name": "Chris Kempczinski",
+        "cik": "0000063908",
+        "pr_page_url": "https://corporate.mcdonalds.com/corpmcd/our-stories/all-stories.html",
     },
     {
         "ticker": "CAVA",
@@ -58,6 +64,8 @@ UNIVERSE = [
         "careers_url": "https://cava.com/careers",
         "x_handle": "cava",
         "ceo_name": "Brett Schulman",
+        "cik": "0001639398",
+        "pr_page_url": "https://investor.cava.com/news-releases",
     },
     {
         "ticker": "TXRH",
@@ -68,6 +76,8 @@ UNIVERSE = [
         "careers_url": "https://careers.texasroadhouse.com",
         "x_handle": "texasroadhouse",
         "ceo_name": "Jerry Morgan",
+        "cik": "0001289460",
+        "pr_page_url": "https://investor.texasroadhouse.com/press-releases",
     },
     {
         "ticker": "WING",
@@ -78,6 +88,8 @@ UNIVERSE = [
         "careers_url": "https://www.wingstop.com/careers",
         "x_handle": "wingstop",
         "ceo_name": "Michael Skipworth",
+        "cik": "0001636222",
+        "pr_page_url": "https://ir.wingstop.com/news-releases",
     },
     {
         "ticker": "DPZ",
@@ -88,6 +100,8 @@ UNIVERSE = [
         "careers_url": "https://jobs.dominos.com",
         "x_handle": "dominos",
         "ceo_name": "Russell Weiner",
+        "cik": "0001286681",
+        "pr_page_url": "https://ir.dominos.com/news-releases",
     },
     {
         "ticker": "QSR",
@@ -98,6 +112,8 @@ UNIVERSE = [
         "careers_url": "https://careers.rbi.com",
         "x_handle": "RBItweets",
         "ceo_name": "Joshua Kobza",
+        "cik": "0001618756",
+        "pr_page_url": "https://www.rbi.com/English/news-and-events",
     },
 ]
 
