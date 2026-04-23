@@ -102,3 +102,80 @@ export interface BriefingResponse {
   macro: MacroRow[];
   upcoming_earnings: UpcomingEarnings[];
 }
+
+export interface NewsItemOut {
+  news_id: number;
+  ticker: string | null;
+  source: string;
+  url: string;
+  published_at: string | null;
+  fetched_at: string;
+  headline: string;
+  publisher: string | null;
+  sentiment_score: number | null;
+  relevance_score: number | null;
+  topics: string[];
+}
+
+export interface SocialPostOut {
+  post_id: number;
+  ticker: string | null;
+  platform: string;
+  account: string | null;
+  posted_at: string | null;
+  content: string;
+  engagement: Record<string, number | string>;
+  sentiment_score: number | null;
+}
+
+export interface RedditPostOut {
+  post_id: string;
+  ticker: string | null;
+  subreddit: string;
+  created_at: string;
+  title: string;
+  score: number;
+  num_comments: number;
+  url: string | null;
+  sentiment_score: number | null;
+}
+
+export interface FilingOut {
+  filing_id: number;
+  ticker: string;
+  filing_type: string;
+  filed_at: string;
+  primary_doc_url: string | null;
+  item_numbers: string[];
+  title: string | null;
+}
+
+export interface JobsSnapshotOut {
+  snapshot_date: string;
+  ticker: string;
+  total_count: number | null;
+  corporate_count: number | null;
+  by_department: Record<string, number>;
+  by_location: Record<string, number>;
+}
+
+export interface CorrelationOut {
+  feature_name: string;
+  target_name: string;
+  method: string;
+  n: number;
+  coefficient: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+  p_value: number | null;
+  p_adjusted: number | null;
+}
+
+export interface SourceRunOut {
+  source_name: string;
+  started_at: string;
+  ended_at: string | null;
+  status: string;
+  rows_fetched: number;
+  error_msg: string | null;
+}

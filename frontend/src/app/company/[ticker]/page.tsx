@@ -4,6 +4,11 @@ import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
+import { FilingsList } from "@/components/company/FilingsList";
+import { JobsList } from "@/components/company/JobsList";
+import { NewsList } from "@/components/company/NewsList";
+import { SocialList } from "@/components/company/SocialList";
+import { Tabs } from "@/components/company/Tabs";
 import {
   directionClass,
   fmtErLabel,
@@ -13,7 +18,7 @@ import {
   fmtSigned,
 } from "@/lib/format";
 
-export const revalidate = 300;
+export const revalidate = 120;
 
 export default async function CompanyPage({
   params,
@@ -22,10 +27,18 @@ export default async function CompanyPage({
 }) {
   let company;
   let universe;
+  let news;
+  let filings;
+  let social;
+  let jobs;
   try {
-    [company, universe] = await Promise.all([
+    [company, universe, news, filings, social, jobs] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
+      api.news(params.ticker, 30).catch(() => []),
+      api.filings(params.ticker, 30).catch(() => []),
+      api.social(params.ticker, 30).catch(() => []),
+      api.jobs(params.ticker, 12).catch(() => []),
     ]);
   } catch {
     notFound();
@@ -34,41 +47,8 @@ export default async function CompanyPage({
   const s = company.signals;
   const up = (s.change_1d_pct ?? 0) >= 0;
 
-  return (
-    <Shell universe={universe} activeTicker={company.ticker}>
-      <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-6 border border-border bg-panel p-5">
-        <div className="font-serif text-[48px] font-bold leading-none tracking-tight text-accent">
-          {company.ticker}
-        </div>
-        <div>
-          <div className="text-sm font-medium text-fg">{company.name}</div>
-          <div className="mt-1 text-[11px] tracking-[0.05em] text-fg-faint">
-            {[
-              company.segment?.toUpperCase(),
-              company.market_cap_tier && `${company.market_cap_tier.toUpperCase()} CAP`,
-              `NEXT ER ${fmtErLabel(s.next_er_date, s.next_er_time)}`,
-              company.ceo_name && `CEO ${company.ceo_name}`,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </div>
-        </div>
-        <div className="text-right">
-          <div
-            className={`font-serif text-[32px] font-medium leading-none tracking-tight ${
-              up ? "text-up" : "text-down"
-            }`}
-          >
-            {fmtNum(s.last_price, 2)}
-          </div>
-          <div
-            className={`font-mono text-[12px] ${up ? "text-up" : "text-down"}`}
-          >
-            {fmtPct(s.change_1d_pct)}
-          </div>
-        </div>
-      </div>
-
+  const overviewTab = (
+    <div>
       <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(212,255,63,0.04)] via-transparent to-transparent px-4 py-3.5">
         <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-accent">
           ◆ Pre-Earnings Hypothesis
@@ -131,6 +111,53 @@ export default async function CompanyPage({
           </ul>
         </Panel>
       </div>
+    </div>
+  );
+
+  return (
+    <Shell universe={universe} activeTicker={company.ticker}>
+      <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-6 border border-border bg-panel p-5">
+        <div className="font-serif text-[48px] font-bold leading-none tracking-tight text-accent">
+          {company.ticker}
+        </div>
+        <div>
+          <div className="text-sm font-medium text-fg">{company.name}</div>
+          <div className="mt-1 text-[11px] tracking-[0.05em] text-fg-faint">
+            {[
+              company.segment?.toUpperCase(),
+              company.market_cap_tier && `${company.market_cap_tier.toUpperCase()} CAP`,
+              `NEXT ER ${fmtErLabel(s.next_er_date, s.next_er_time)}`,
+              company.ceo_name && `CEO ${company.ceo_name}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        </div>
+        <div className="text-right">
+          <div
+            className={`font-serif text-[32px] font-medium leading-none tracking-tight ${
+              up ? "text-up" : "text-down"
+            }`}
+          >
+            {fmtNum(s.last_price, 2)}
+          </div>
+          <div
+            className={`font-mono text-[12px] ${up ? "text-up" : "text-down"}`}
+          >
+            {fmtPct(s.change_1d_pct)}
+          </div>
+        </div>
+      </div>
+
+      <Tabs
+        tabs={[
+          { id: "overview", label: "Overview", content: overviewTab },
+          { id: "news",     label: `News (${news.length})`,     content: <NewsList items={news} /> },
+          { id: "social",   label: `Social (${social.length})`, content: <SocialList items={social} /> },
+          { id: "filings",  label: `Filings (${filings.length})`, content: <FilingsList items={filings} /> },
+          { id: "jobs",     label: `Jobs (${jobs.length})`,     content: <JobsList items={jobs} /> },
+        ]}
+      />
     </Shell>
   );
 }

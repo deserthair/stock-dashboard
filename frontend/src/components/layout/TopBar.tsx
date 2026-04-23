@@ -7,10 +7,8 @@ import { useEffect, useState } from "react";
 const NAV = [
   { href: "/", label: "Briefing" },
   { href: "/company/CMG", label: "Company" },
-  { href: "/earnings", label: "Earnings" },
   { href: "/correlations", label: "Correlations" },
-  { href: "/macro", label: "Macro" },
-  { href: "/hypotheses", label: "Hypotheses" },
+  { href: "/ops", label: "Ops" },
 ];
 
 function useNyClock() {

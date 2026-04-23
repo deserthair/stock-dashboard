@@ -1,8 +1,15 @@
 import type {
   BriefingResponse,
   CompanyDetail,
+  CorrelationOut,
   EventOut,
+  FilingOut,
+  JobsSnapshotOut,
   MacroRow,
+  NewsItemOut,
+  RedditPostOut,
+  SocialPostOut,
+  SourceRunOut,
   UniverseRow,
   UpcomingEarnings,
 } from "./types";
@@ -29,4 +36,45 @@ export const api = {
   macro: () => get<MacroRow[]>("/api/macro", 300),
   company: (ticker: string) =>
     get<CompanyDetail>(`/api/companies/${ticker.toUpperCase()}`, 300),
+
+  news: (ticker?: string, limit = 50) =>
+    get<NewsItemOut[]>(
+      `/api/news?limit=${limit}${ticker ? `&ticker=${ticker.toUpperCase()}` : ""}`,
+      120,
+    ),
+
+  social: (ticker?: string, limit = 50) =>
+    get<SocialPostOut[]>(
+      `/api/social?limit=${limit}${ticker ? `&ticker=${ticker.toUpperCase()}` : ""}`,
+      120,
+    ),
+
+  reddit: (ticker?: string, limit = 50) =>
+    get<RedditPostOut[]>(
+      `/api/social/reddit?limit=${limit}${ticker ? `&ticker=${ticker.toUpperCase()}` : ""}`,
+      120,
+    ),
+
+  filings: (ticker?: string, limit = 50) =>
+    get<FilingOut[]>(
+      `/api/filings?limit=${limit}${ticker ? `&ticker=${ticker.toUpperCase()}` : ""}`,
+      300,
+    ),
+
+  jobs: (ticker?: string, limit = 30) =>
+    get<JobsSnapshotOut[]>(
+      `/api/jobs?limit=${limit}${ticker ? `&ticker=${ticker.toUpperCase()}` : ""}`,
+      600,
+    ),
+
+  correlations: (target?: string, method?: string) => {
+    const parts = [];
+    if (target) parts.push(`target=${encodeURIComponent(target)}`);
+    if (method) parts.push(`method=${encodeURIComponent(method)}`);
+    const qs = parts.length ? `?${parts.join("&")}` : "";
+    return get<CorrelationOut[]>(`/api/analysis/correlations${qs}`, 600);
+  },
+
+  sourceRuns: (limit = 30) =>
+    get<SourceRunOut[]>(`/api/ops/source-runs?limit=${limit}`, 30),
 };
