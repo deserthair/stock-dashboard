@@ -6,6 +6,7 @@ import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { EarningsHistory } from "@/components/company/EarningsHistory";
+import { Financials } from "@/components/company/Financials";
 import { FilingsList } from "@/components/company/FilingsList";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
@@ -40,8 +41,9 @@ export default async function CompanyPage({
   let jobs;
   let prices;
   let earnings;
+  let fundamentals;
   try {
-    [company, universe, news, filings, social, jobs, prices, earnings] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30, range).catch(() => []),
@@ -50,6 +52,7 @@ export default async function CompanyPage({
       api.jobs(params.ticker, 12, range).catch(() => []),
       api.companyPrices(params.ticker, 90).catch(() => ({ ticker: params.ticker.toUpperCase(), bars: [], markers: [] })),
       api.earningsAll({ ticker: params.ticker, past_only: true }, range).catch(() => []),
+      api.companyFundamentals(params.ticker).catch(() => null),
     ]);
   } catch {
     notFound();
@@ -220,6 +223,20 @@ export default async function CompanyPage({
                 )}
                 <EarningsHistory rows={earnings} />
               </div>
+            ),
+          },
+          {
+            id: "financials",
+            label: `Financials${fundamentals ? ` (${fundamentals.metrics.quarters_available}q)` : ""}`,
+            content: fundamentals ? (
+              <Financials data={fundamentals} />
+            ) : (
+              <Panel title="Financials">
+                <p className="text-[11px] text-fg-dim">
+                  No fundamentals ingested yet. Run{" "}
+                  <code>python -m ingest.sources.fundamentals</code>.
+                </p>
+              </Panel>
             ),
           },
           { id: "news",     label: `News (${news.length})`,     content: <NewsList items={news} /> },

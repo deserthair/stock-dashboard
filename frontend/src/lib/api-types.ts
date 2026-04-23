@@ -194,6 +194,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companies/{ticker}/fundamentals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Company Fundamentals */
+        get: operations["get_company_fundamentals_api_companies__ticker__fundamentals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/news": {
         parameters: {
             query?: never;
@@ -559,6 +576,16 @@ export interface components {
             cik: string | null;
             signals: components["schemas"]["UniverseRow"];
         };
+        /** CompanyFundamentals */
+        CompanyFundamentals: {
+            /** Ticker */
+            ticker: string;
+            /** Last Price */
+            last_price: number | null;
+            metrics: components["schemas"]["QualityMetricsOut"];
+            /** Quarterly */
+            quarterly: components["schemas"]["FundamentalRow"][];
+        };
         /** CompanyPriceHistory */
         CompanyPriceHistory: {
             /** Ticker */
@@ -749,6 +776,46 @@ export interface components {
             /** Title */
             title: string | null;
         };
+        /** FundamentalRow */
+        FundamentalRow: {
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /** Fiscal Period */
+            fiscal_period: string | null;
+            /** Revenue */
+            revenue: number | null;
+            /** Gross Profit */
+            gross_profit: number | null;
+            /** Operating Income */
+            operating_income: number | null;
+            /** Net Income */
+            net_income: number | null;
+            /** Eps Diluted */
+            eps_diluted: number | null;
+            /** Total Assets */
+            total_assets: number | null;
+            /** Total Debt */
+            total_debt: number | null;
+            /** Total Equity */
+            total_equity: number | null;
+            /** Operating Cash Flow */
+            operating_cash_flow: number | null;
+            /** Capex */
+            capex: number | null;
+            /** Free Cash Flow */
+            free_cash_flow: number | null;
+            /** Dividends Per Share */
+            dividends_per_share: number | null;
+            /** Invested Capital */
+            invested_capital: number | null;
+            /** Nopat */
+            nopat: number | null;
+            /** Roic */
+            roic: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -912,6 +979,49 @@ export interface components {
             close: number | null;
             /** Volume */
             volume: number | null;
+        };
+        /** QualityMetricsOut */
+        QualityMetricsOut: {
+            /** Revenue Ttm */
+            revenue_ttm: number | null;
+            /** Net Income Ttm */
+            net_income_ttm: number | null;
+            /** Eps Ttm */
+            eps_ttm: number | null;
+            /** Fcf Ttm */
+            fcf_ttm: number | null;
+            /** Book Value */
+            book_value: number | null;
+            /** Dividends Per Share Ttm */
+            dividends_per_share_ttm: number | null;
+            /** Revenue Yoy Pct */
+            revenue_yoy_pct: number | null;
+            /** Eps Yoy Pct */
+            eps_yoy_pct: number | null;
+            /** Equity Yoy Pct */
+            equity_yoy_pct: number | null;
+            /** Fcf Yoy Pct */
+            fcf_yoy_pct: number | null;
+            /** Dividend Yoy Pct */
+            dividend_yoy_pct: number | null;
+            /** Revenue Cagr 3Y Pct */
+            revenue_cagr_3y_pct: number | null;
+            /** Eps Cagr 3Y Pct */
+            eps_cagr_3y_pct: number | null;
+            /** Equity Cagr 3Y Pct */
+            equity_cagr_3y_pct: number | null;
+            /** Fcf Cagr 3Y Pct */
+            fcf_cagr_3y_pct: number | null;
+            /** Roic Latest Pct */
+            roic_latest_pct: number | null;
+            /** Roic Ttm Pct */
+            roic_ttm_pct: number | null;
+            /** Dividend Yield Pct */
+            dividend_yield_pct: number | null;
+            /** Quarters Available */
+            quarters_available: number;
+            /** Years Of History */
+            years_of_history: number;
         };
         /** RedditPostOut */
         RedditPostOut: {
@@ -1499,6 +1609,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyPriceHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_company_fundamentals_api_companies__ticker__fundamentals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyFundamentals"];
                 };
             };
             /** @description Validation Error */

@@ -272,6 +272,52 @@ class TrendsObservation(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Fundamental(Base):
+    """Quarterly financial statement line items per company.
+
+    One row per (company, fiscal_period_end). Source of truth for the
+    quality metrics (ROIC, growth rates, dividend yield) rendered on
+    the Company page Financials tab."""
+
+    __tablename__ = "fundamentals"
+
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.company_id"), primary_key=True
+    )
+    period_end: Mapped[date] = mapped_column(Date, primary_key=True)
+    fiscal_period: Mapped[str | None] = mapped_column(String(16))
+
+    # Income statement
+    revenue: Mapped[float | None] = mapped_column(Float)
+    gross_profit: Mapped[float | None] = mapped_column(Float)
+    operating_income: Mapped[float | None] = mapped_column(Float)
+    net_income: Mapped[float | None] = mapped_column(Float)
+    eps_diluted: Mapped[float | None] = mapped_column(Float)
+    shares_diluted: Mapped[float | None] = mapped_column(Float)
+
+    # Balance sheet
+    total_assets: Mapped[float | None] = mapped_column(Float)
+    total_debt: Mapped[float | None] = mapped_column(Float)
+    total_equity: Mapped[float | None] = mapped_column(Float)
+
+    # Cash flow
+    operating_cash_flow: Mapped[float | None] = mapped_column(Float)
+    capex: Mapped[float | None] = mapped_column(Float)
+    free_cash_flow: Mapped[float | None] = mapped_column(Float)
+
+    # Shareholder return
+    dividends_paid: Mapped[float | None] = mapped_column(Float)
+    dividends_per_share: Mapped[float | None] = mapped_column(Float)
+
+    # Derived (precomputed at ingest)
+    invested_capital: Mapped[float | None] = mapped_column(Float)
+    nopat: Mapped[float | None] = mapped_column(Float)
+    roic: Mapped[float | None] = mapped_column(Float)
+
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    source: Mapped[str] = mapped_column(String(32), default="yfinance")
+
+
 # ---------- features + analytics ----------
 
 

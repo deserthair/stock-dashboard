@@ -2,6 +2,7 @@ import type {
   AnalysisAxesResponse,
   BriefingResponse,
   CompanyDetail,
+  CompanyFundamentals,
   CompanyPriceHistory,
   CorrelationOut,
   EarningsPostmortemOut,
@@ -63,6 +64,12 @@ export const api = {
     get<CompanyPriceHistory>(
       `/api/companies/${ticker.toUpperCase()}/prices?days=${days}`,
       120,
+    ),
+
+  companyFundamentals: (ticker: string) =>
+    get<CompanyFundamentals>(
+      `/api/companies/${ticker.toUpperCase()}/fundamentals`,
+      600,
     ),
 
   news: (ticker?: string, limit = 50, range?: DateRange) =>

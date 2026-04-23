@@ -19,6 +19,7 @@ from .models import (
     EarningsFeature,
     EarningsPostmortem,
     Event,
+    Fundamental,
     MacroSeries,
     PriceDaily,
     TrendsObservation,
@@ -503,6 +504,8 @@ def run() -> None:
         _seed_demo_postmortems(s, by_ticker)
         # --- demo Trends series so /api/trends renders without pytrends
         _seed_demo_trends(s, by_ticker)
+        # --- demo quarterly fundamentals so /company/…/fundamentals renders without yfinance
+        _seed_demo_fundamentals(s, by_ticker)
         s.commit()
 
     # Run a one-shot correlation pass now that features exist so the
@@ -704,6 +707,104 @@ def _seed_demo_trends(s, by_ticker: dict) -> None:
                     obs_date=d,
                     value=round(v, 2),
                     ratio_to_mean=round(v / mean_v, 3) if mean_v else None,
+                )
+            )
+
+
+# Per-ticker seed parameters for the synthetic quarterly fundamentals walk.
+# (quarterly_revenue_latest, growth_rate_yoy, net_margin, fcf_margin,
+#  debt_ratio, equity_base, div_per_share_quarterly).
+FUNDAMENTALS_SEED = {
+    # $-denominated, rough magnitudes loosely grounded in reality so the UI
+    # numbers look sensible. Not a substitute for real yfinance data.
+    "CMG":  dict(rev=2_800_000_000, grow=0.14, margin=0.13,  fcf_m=0.11, debt_r=0.20, eq=3_600_000_000, dps=0.00),
+    "SBUX": dict(rev=9_100_000_000, grow=0.03, margin=0.10,  fcf_m=0.08, debt_r=1.50, eq=2_200_000_000, dps=0.57),
+    "MCD":  dict(rev=6_400_000_000, grow=0.04, margin=0.33,  fcf_m=0.28, debt_r=2.20, eq=7_100_000_000, dps=1.67),
+    "CAVA": dict(rev=275_000_000,   grow=0.31, margin=0.05,  fcf_m=0.04, debt_r=0.10, eq=760_000_000,   dps=0.00),
+    "TXRH": dict(rev=1_330_000_000, grow=0.09, margin=0.09,  fcf_m=0.07, debt_r=0.02, eq=1_200_000_000, dps=0.61),
+    "WING": dict(rev=155_000_000,   grow=0.26, margin=0.18,  fcf_m=0.22, debt_r=5.00, eq=150_000_000,   dps=0.23),
+    "DPZ":  dict(rev=1_490_000_000, grow=0.05, margin=0.12,  fcf_m=0.14, debt_r=-2.50, eq=-200_000_000, dps=1.21),  # DPZ: negative equity from buybacks
+    "QSR":  dict(rev=1_870_000_000, grow=0.06, margin=0.17,  fcf_m=0.20, debt_r=2.40, eq=3_100_000_000, dps=0.58),
+}
+
+
+def _seed_demo_fundamentals(s, by_ticker: dict) -> None:
+    """Write ~16 quarters per ticker so the Financials tab has 3yr CAGR + TTM."""
+    s.query(Fundamental).delete()
+    tax_rate = 0.21
+    rng = random.Random(0xF00D)
+
+    # Use the most-recent CMG seeded earnings date as the anchor.
+    latest_q = date(2026, 3, 31)  # Q1 2026 end
+
+    for ticker, cfg in FUNDAMENTALS_SEED.items():
+        company = by_ticker.get(ticker)
+        if company is None:
+            continue
+        rev_base = cfg["rev"]
+        growth = cfg["grow"]  # annual
+        q_growth = (1 + growth) ** (1 / 4) - 1
+        margin = cfg["margin"]
+        fcf_margin = cfg["fcf_m"]
+        debt_ratio = cfg["debt_r"]
+        equity_base = cfg["eq"]
+        dps = cfg["dps"]
+
+        for q_back in range(16):
+            # Walk backward in quarters from latest_q
+            year = latest_q.year
+            month = latest_q.month - 3 * q_back
+            while month <= 0:
+                month += 12
+                year -= 1
+            period_end = date(year, month, 28 if month == 2 else 30)
+            qs_from_latest = q_back
+
+            # Revenue scales down as we go back in time
+            revenue = rev_base / ((1 + q_growth) ** qs_from_latest)
+            revenue *= 1 + rng.gauss(0, 0.03)  # seasonality + noise
+            net_income = revenue * (margin + rng.gauss(0, 0.01))
+            shares = 140_000_000 if ticker == "MCD" else 28_000_000
+            eps = net_income / shares
+            fcf = revenue * (fcf_margin + rng.gauss(0, 0.01))
+            ocf = fcf + revenue * 0.04  # impute capex ≈ 4% of rev
+            capex = -revenue * 0.04
+            equity = equity_base / ((1 + q_growth) ** qs_from_latest)
+            total_debt = max(0, equity * abs(debt_ratio)) if debt_ratio != 0 else 0
+            total_assets = max(equity + total_debt, revenue * 2.0)
+            gross_profit = revenue * (margin + 0.15)
+            op_income = revenue * (margin + 0.05)
+            dividends_paid = -dps * shares
+            dividends_per_share = dps
+
+            invested_capital = total_debt + equity
+            nopat = op_income * (1 - tax_rate)
+            roic = nopat / invested_capital if invested_capital and invested_capital > 0 else None
+
+            q = (period_end.month - 1) // 3 + 1
+            s.add(
+                Fundamental(
+                    company_id=company.company_id,
+                    period_end=period_end,
+                    fiscal_period=f"Q{q} {period_end.year}",
+                    revenue=round(revenue, 0),
+                    gross_profit=round(gross_profit, 0),
+                    operating_income=round(op_income, 0),
+                    net_income=round(net_income, 0),
+                    eps_diluted=round(eps, 2),
+                    shares_diluted=shares,
+                    total_assets=round(total_assets, 0),
+                    total_debt=round(total_debt, 0),
+                    total_equity=round(equity, 0),
+                    operating_cash_flow=round(ocf, 0),
+                    capex=round(capex, 0),
+                    free_cash_flow=round(fcf, 0),
+                    dividends_paid=round(dividends_paid, 0),
+                    dividends_per_share=round(dividends_per_share, 4),
+                    invested_capital=round(invested_capital, 0),
+                    nopat=round(nopat, 0),
+                    roic=round(roic, 4) if roic is not None else None,
+                    source="seed:demo",
                 )
             )
 

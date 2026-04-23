@@ -311,6 +311,60 @@ class TrendsSeriesOut(BaseModel):
     change_90d_pct: float | None
 
 
+class FundamentalRow(BaseModel):
+    period_end: date
+    fiscal_period: str | None
+    revenue: float | None
+    gross_profit: float | None
+    operating_income: float | None
+    net_income: float | None
+    eps_diluted: float | None
+    total_assets: float | None
+    total_debt: float | None
+    total_equity: float | None
+    operating_cash_flow: float | None
+    capex: float | None
+    free_cash_flow: float | None
+    dividends_per_share: float | None
+    invested_capital: float | None
+    nopat: float | None
+    roic: float | None
+
+
+class QualityMetricsOut(BaseModel):
+    revenue_ttm: float | None
+    net_income_ttm: float | None
+    eps_ttm: float | None
+    fcf_ttm: float | None
+    book_value: float | None
+    dividends_per_share_ttm: float | None
+
+    revenue_yoy_pct: float | None
+    eps_yoy_pct: float | None
+    equity_yoy_pct: float | None
+    fcf_yoy_pct: float | None
+    dividend_yoy_pct: float | None
+
+    revenue_cagr_3y_pct: float | None
+    eps_cagr_3y_pct: float | None
+    equity_cagr_3y_pct: float | None
+    fcf_cagr_3y_pct: float | None
+
+    roic_latest_pct: float | None
+    roic_ttm_pct: float | None
+    dividend_yield_pct: float | None
+
+    quarters_available: int
+    years_of_history: float
+
+
+class CompanyFundamentals(BaseModel):
+    ticker: str
+    last_price: float | None
+    metrics: QualityMetricsOut
+    quarterly: list[FundamentalRow]
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int

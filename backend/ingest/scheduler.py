@@ -40,6 +40,7 @@ from ingest.sources import (
     earnings as src_earnings,
     email_imap as src_email,
     filings as src_filings,
+    fundamentals as src_fundamentals,
     jobs as src_jobs,
     macro as src_macro,
     news_rss as src_news,
@@ -76,6 +77,8 @@ JOBS = [
     (src_jobs.run_once,        "jobs",         {"trigger": "cron", "day_of_week": "mon", "hour": 5}),
     # Google Trends is rate-limited; pull twice a week (Tue + Fri).
     (src_trends.run_once,      "trends",       {"trigger": "cron", "day_of_week": "tue,fri", "hour": 3}),
+    # Fundamentals only change on earnings cadence; daily is plenty.
+    (src_fundamentals.run_once,"fundamentals", {"trigger": "cron", "hour": 4, "minute": 30}),
 
     (norm_sentiment.run_once,  "sentiment",    {"trigger": "interval", "minutes": 30}),
     (norm_signals.run_once,    "signals",      {"trigger": "interval", "minutes": 30}),

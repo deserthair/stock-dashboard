@@ -331,3 +331,55 @@ def test_trends_series_date_range(client):
     ).json()
     for o in narrow["observations"]:
         assert "2025-01-01" <= o["obs_date"] <= "2025-06-30"
+
+
+# ---------- fundamentals ----------
+
+
+def test_fundamentals_shape(client):
+    r = client.get("/api/companies/CMG/fundamentals")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert body["metrics"]["quarters_available"] >= 12
+    # ~3 years of history from the 16-quarter seed
+    assert body["metrics"]["years_of_history"] >= 3.0
+    assert len(body["quarterly"]) >= 12
+
+
+def test_fundamentals_growth_rates(client):
+    body = client.get("/api/companies/CMG/fundamentals").json()
+    m = body["metrics"]
+    # Seed baked in ~14% annual revenue growth
+    assert m["revenue_yoy_pct"] is not None
+    assert 5 < m["revenue_yoy_pct"] < 30
+    assert m["revenue_cagr_3y_pct"] is not None
+    assert 5 < m["revenue_cagr_3y_pct"] < 30
+
+
+def test_fundamentals_roic_positive_for_profitable_tickers(client):
+    for ticker in ("CMG", "MCD", "CAVA", "WING"):
+        body = client.get(f"/api/companies/{ticker}/fundamentals").json()
+        assert body["metrics"]["roic_ttm_pct"] is not None
+        assert body["metrics"]["roic_ttm_pct"] > 0, f"{ticker} ROIC should be positive"
+
+
+def test_fundamentals_dividend_yield(client):
+    # MCD has a fat dividend in the seed (~$1.67/q); yield should be positive
+    body = client.get("/api/companies/MCD/fundamentals").json()
+    m = body["metrics"]
+    assert m["dividends_per_share_ttm"] is not None
+    assert m["dividends_per_share_ttm"] > 0
+    assert m["dividend_yield_pct"] is not None
+    assert m["dividend_yield_pct"] > 0
+
+
+def test_fundamentals_non_dividend_payer(client):
+    # CMG and CAVA don't pay dividends in the seed
+    body = client.get("/api/companies/CMG/fundamentals").json()
+    assert (body["metrics"]["dividends_per_share_ttm"] or 0) == 0
+
+
+def test_fundamentals_unknown_ticker(client):
+    r = client.get("/api/companies/ZZZ/fundamentals")
+    assert r.status_code == 404
