@@ -1,9 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from analysis import heatmap as analysis_heatmap
+from analysis import regression as analysis_regression
+from analysis import scatter as analysis_scatter
+from analysis.frame import FEATURE_COLS, TARGET_COLS
+
 from ..db import get_db
 from ..models import Company, Correlation, Earnings, EarningsFeature
-from ..schemas import CorrelationOut, FeatureVectorOut
+from ..schemas import (
+    AnalysisAxesResponse,
+    CoefficientOut,
+    CorrelationOut,
+    FeatureVectorOut,
+    HeatmapResponse,
+    RegressionFitOut,
+    RegressionLineOut,
+    ScatterPointOut,
+    ScatterResponse,
+)
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -65,3 +80,70 @@ def get_feature_vector(earnings_id: int, db: Session = Depends(get_db)) -> Featu
         feature_version=feat.feature_version,
         values=values,
     )
+
+
+@router.get("/axes", response_model=AnalysisAxesResponse)
+def get_axes() -> AnalysisAxesResponse:
+    return AnalysisAxesResponse(features=list(FEATURE_COLS), targets=list(TARGET_COLS))
+
+
+@router.get("/scatter", response_model=ScatterResponse)
+def get_scatter(
+    feature: str = Query(...),
+    target: str = Query(...),
+    db: Session = Depends(get_db),
+) -> ScatterResponse:
+    if feature not in FEATURE_COLS:
+        raise HTTPException(status_code=400, detail=f"Unknown feature {feature}")
+    if target not in TARGET_COLS:
+        raise HTTPException(status_code=400, detail=f"Unknown target {target}")
+    points, line = analysis_scatter.build(db, feature, target)
+    return ScatterResponse(
+        feature=feature,
+        target=target,
+        points=[
+            ScatterPointOut(
+                ticker=p.ticker,
+                earnings_id=p.earnings_id,
+                report_date=p.report_date,
+                x=p.x,
+                y=p.y,
+            )
+            for p in points
+        ],
+        line=(
+            RegressionLineOut(**line.__dict__) if line is not None else None
+        ),
+    )
+
+
+@router.get("/heatmap", response_model=HeatmapResponse)
+def get_heatmap(
+    method: str = Query(default="pearson", pattern="^(pearson|spearman)$"),
+    db: Session = Depends(get_db),
+) -> HeatmapResponse:
+    data = analysis_heatmap.build(db, method=method)
+    return HeatmapResponse(**data)
+
+
+@router.get("/regression", response_model=list[RegressionFitOut])
+def get_regressions(db: Session = Depends(get_db)) -> list[RegressionFitOut]:
+    fits = analysis_regression.fit_all(db)
+    return [
+        RegressionFitOut(
+            method=f.method,
+            target=f.target,
+            n=f.n,
+            features_used=f.features_used,
+            intercept=f.intercept,
+            r_squared=f.r_squared,
+            r_squared_loo=f.r_squared_loo,
+            rmse=f.rmse,
+            coefficients=[
+                CoefficientOut(feature=c.feature, value=c.value, abs_value=c.abs_value)
+                for c in f.coefficients
+            ],
+            note=f.note,
+        )
+        for f in fits
+    ]

@@ -130,3 +130,53 @@ def test_correlations_shape(client):
 
 def test_ops_source_runs_shape(client):
     assert client.get("/api/ops/source-runs").status_code == 200
+
+
+def test_analysis_axes(client):
+    r = client.get("/api/analysis/axes")
+    assert r.status_code == 200
+    body = r.json()
+    assert "news_sentiment_mean_30d" in body["features"]
+    assert "eps_surprise_pct" in body["targets"]
+
+
+def test_analysis_scatter_seeded(client):
+    r = client.get(
+        "/api/analysis/scatter?feature=news_sentiment_mean_30d&target=eps_surprise_pct"
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["points"]) >= 10       # 17 historical earnings seeded
+    line = body["line"]
+    assert line is not None
+    # Seed was engineered to correlate positively
+    assert line["pearson_r"] is not None and line["pearson_r"] > 0.3
+
+
+def test_analysis_scatter_rejects_unknown(client):
+    r = client.get("/api/analysis/scatter?feature=bogus&target=eps_surprise_pct")
+    assert r.status_code == 400
+
+
+def test_analysis_heatmap(client):
+    r = client.get("/api/analysis/heatmap")
+    assert r.status_code == 200
+    body = r.json()
+    n = len(body["features"])
+    assert n >= 10
+    assert len(body["matrix"]) == n
+    for i in range(n):
+        # diagonal is always 1.0 for Pearson
+        assert body["matrix"][i][i] is None or abs(body["matrix"][i][i] - 1.0) < 1e-6
+
+
+def test_analysis_regression(client):
+    r = client.get("/api/analysis/regression")
+    assert r.status_code == 200
+    fits = r.json()
+    assert len(fits) >= 2
+    methods = {f["method"] for f in fits}
+    assert {"ols", "lasso"}.issubset(methods)
+    # At least one lasso fit should have coefficients
+    lasso_fits = [f for f in fits if f["method"] == "lasso"]
+    assert any(len(f["coefficients"]) > 0 for f in lasso_fits)

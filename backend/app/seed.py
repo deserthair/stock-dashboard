@@ -16,6 +16,7 @@ from .models import (
     Company,
     CompanySignal,
     Earnings,
+    EarningsFeature,
     Event,
     MacroSeries,
     PriceDaily,
@@ -225,6 +226,68 @@ def _seed_prices(s, by_ticker: dict[str, Company]) -> None:
             existing.volume = int(rng.uniform(500_000, 6_000_000))
 
 
+def _seed_earnings_features(s, earnings_rows: list) -> None:
+    """Synthesize plausible feature vectors per past earnings so the EDA
+    endpoints (scatter / heatmap / regression) have something real to
+    render in the sandbox. Overwritten the moment features.engineer.run_once
+    is called against live data."""
+    rng = random.Random(0xE4)
+    for e in earnings_rows:
+        # Skip upcoming (no outcome yet).
+        if e.eps_actual is None or e.eps_estimate is None:
+            continue
+        surprise = (e.eps_actual - e.eps_estimate) / max(abs(e.eps_estimate), 1e-9)
+        # Positively correlated features (news vol, sentiment, RS).
+        news_vol = max(5, int(30 + surprise * 80 + rng.gauss(0, 8)))
+        news_sent = max(-1, min(1, surprise * 1.4 + rng.gauss(0, 0.15)))
+        social_sent = max(-1, min(1, surprise * 1.1 + rng.gauss(0, 0.2)))
+        rs_30d = surprise * 18 + rng.gauss(0, 4)
+        return_30d = surprise * 14 + rng.gauss(0, 3)
+        # Weakly correlated or uncorrelated macro features.
+        beef = rng.gauss(3, 4)
+        chicken = rng.gauss(-1, 3)
+        wheat = rng.gauss(0.5, 2)
+        gas = rng.gauss(-1.5, 3)
+        # Hiring: modest positive correlation with a beat
+        jobs_total = surprise * 6 + rng.gauss(1.5, 3)
+        jobs_corp = surprise * 10 + rng.gauss(0, 4)
+        cons_sent = 74 + rng.gauss(0, 1.5)
+        cons_sent_delta = rng.gauss(0.8, 0.8)
+        unemp = rng.gauss(0.1, 0.2)
+
+        existing = (
+            s.query(EarningsFeature)
+            .filter_by(earnings_id=e.earnings_id, feature_version="v0")
+            .one_or_none()
+        )
+        feat = existing or EarningsFeature(
+            earnings_id=e.earnings_id, feature_version="v0"
+        )
+        feat.return_30d = round(return_30d, 2)
+        feat.volatility_30d = round(abs(rng.gauss(2.2, 0.6)), 3)
+        feat.volume_trend_30d = round(rng.gauss(0, 15), 2)
+        feat.rs_30d = round(rs_30d, 2)
+        feat.news_sentiment_mean_30d = round(news_sent, 3)
+        feat.news_sentiment_trend_30d = round(news_sent - rng.gauss(0, 0.1), 3)
+        feat.news_volume_30d = news_vol
+        feat.news_volume_z = round((news_vol - 30) / 10, 2)
+        feat.social_sentiment_mean_30d = round(social_sent, 3)
+        feat.social_volume_30d = max(0, int(rng.gauss(40, 12)))
+        feat.jobs_count_change_90d = round(jobs_total, 2)
+        feat.jobs_corporate_change_90d = round(jobs_corp, 2)
+        feat.filings_8k_count_30d = rng.randint(0, 3)
+        feat.filings_exec_change = False
+        feat.beef_change_90d = round(beef, 2)
+        feat.chicken_change_90d = round(chicken, 2)
+        feat.wheat_change_90d = round(wheat, 2)
+        feat.gas_change_90d = round(gas, 2)
+        feat.cons_sentiment_level = round(cons_sent, 1)
+        feat.cons_sentiment_change_90d = round(cons_sent_delta, 2)
+        feat.unemployment_change_90d = round(unemp, 2)
+        if existing is None:
+            s.add(feat)
+
+
 def _events_fixture(today: datetime, company_ids: dict[str, int]) -> list[Event]:
     rows = [
         ("CMG",  "filing",        0,  6, 14, "hi", "EDGAR",     "8-K filed · Item 7.01 Reg FD · investor day confirmed May 9"),
@@ -360,7 +423,8 @@ def run() -> None:
         # the internet. yfinance ingest overwrites these rows once it can fetch real data.
         _seed_prices(s, by_ticker)
 
-        # --- upcoming + historical earnings
+        # --- upcoming + historical earnings (and their engineered feature vectors)
+        s.query(EarningsFeature).delete()
         s.query(Earnings).delete()
         for ticker, sig in SIGNALS.items():
             if ticker not in EARNINGS_ESTIMATES:
@@ -398,6 +462,8 @@ def run() -> None:
                     hypothesis_score=hyp,
                 )
             )
+        s.flush()
+        _seed_earnings_features(s, s.query(Earnings).all())
 
         # --- events
         s.query(Event).delete()
@@ -431,6 +497,15 @@ def run() -> None:
         )
 
         s.commit()
+
+    # Run a one-shot correlation pass now that features exist so the
+    # ranked univariate table in /correlations has something out-of-the-box.
+    try:
+        from analysis.correlation import run_once as _corr
+
+        _corr()
+    except Exception as exc:  # noqa: BLE001 - seed is best-effort
+        print(f"[seed] correlation pass failed: {exc}")
     print("Seed complete.")
 
 

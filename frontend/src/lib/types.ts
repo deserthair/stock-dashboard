@@ -31,6 +31,13 @@ export type EarningsRow = S["EarningsRow"];
 export type HypothesisTrackerRow = S["HypothesisTrackerRow"];
 export type HypothesisTrackerSummary = S["HypothesisTrackerSummary"];
 export type MacroSeriesDetail = S["MacroSeriesDetail"];
+export type ScatterPointOut = S["ScatterPointOut"];
+export type RegressionLineOut = S["RegressionLineOut"];
+export type ScatterResponse = S["ScatterResponse"];
+export type HeatmapResponse = S["HeatmapResponse"];
+export type CoefficientOut = S["CoefficientOut"];
+export type RegressionFitOut = S["RegressionFitOut"];
+export type AnalysisAxesResponse = S["AnalysisAxesResponse"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

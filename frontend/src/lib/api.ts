@@ -1,4 +1,5 @@
 import type {
+  AnalysisAxesResponse,
   BriefingResponse,
   CompanyDetail,
   CompanyPriceHistory,
@@ -6,12 +7,15 @@ import type {
   EarningsRow,
   EventOut,
   FilingOut,
+  HeatmapResponse,
   HypothesisTrackerSummary,
   JobsSnapshotOut,
   MacroRow,
   MacroSeriesDetail,
   NewsItemOut,
   RedditPostOut,
+  RegressionFitOut,
+  ScatterResponse,
   SocialPostOut,
   SourceRunOut,
   UniverseRow,
@@ -99,6 +103,19 @@ export const api = {
 
   hypothesesTracker: () =>
     get<HypothesisTrackerSummary>("/api/hypotheses", 300),
+
+  analysisAxes: () => get<AnalysisAxesResponse>("/api/analysis/axes", 3600),
+
+  scatter: (feature: string, target: string) =>
+    get<ScatterResponse>(
+      `/api/analysis/scatter?feature=${encodeURIComponent(feature)}&target=${encodeURIComponent(target)}`,
+      600,
+    ),
+
+  heatmap: (method: "pearson" | "spearman" = "pearson") =>
+    get<HeatmapResponse>(`/api/analysis/heatmap?method=${method}`, 600),
+
+  regression: () => get<RegressionFitOut[]>("/api/analysis/regression", 600),
 
   macroSeries: async (seriesId: string, days = 365) => {
     const raw = await get<MacroSeriesDetail>(

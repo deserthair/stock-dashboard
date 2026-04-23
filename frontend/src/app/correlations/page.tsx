@@ -1,13 +1,35 @@
 import { api } from "@/lib/api";
+import { CorrelationLab } from "@/components/analysis/CorrelationLab";
+import { Heatmap } from "@/components/analysis/Heatmap";
+import { RegressionSummary } from "@/components/analysis/RegressionSummary";
 import { Shell } from "@/components/layout/Shell";
 import { Panel } from "@/components/ui/Panel";
 import { fmtSigned } from "@/lib/format";
 
 export const revalidate = 600;
 
+const DEFAULT_FEATURE = "news_sentiment_mean_30d";
+const DEFAULT_TARGET = "eps_surprise_pct";
+
 export default async function CorrelationsPage() {
-  const [universe, correlations] = await Promise.all([
+  const [universe, axes, scatter, heatmap, regressions, correlations] = await Promise.all([
     api.universe(),
+    api.analysisAxes().catch(() => ({ features: [], targets: [] })),
+    api
+      .scatter(DEFAULT_FEATURE, DEFAULT_TARGET)
+      .catch(() => ({
+        feature: DEFAULT_FEATURE,
+        target: DEFAULT_TARGET,
+        points: [],
+        line: null,
+      })),
+    api.heatmap("pearson").catch(() => ({
+      method: "pearson",
+      features: [],
+      matrix: [],
+      sample_sizes: [],
+    })),
+    api.regression().catch(() => []),
     api.correlations().catch(() => []),
   ]);
 
@@ -15,25 +37,47 @@ export default async function CorrelationsPage() {
     <Shell universe={universe}>
       <header className="mb-3 flex items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">
-          Correlations
+          Correlation Lab
         </h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          Univariate · Feature vs Target
+          Exploratory analysis · scatter · heatmap · OLS vs Lasso
         </span>
       </header>
 
-      {correlations.length === 0 ? (
-        <Panel title="No correlations computed yet">
-          <p className="text-[11px] text-fg-dim">
-            Feature vectors and correlations are computed daily from earnings
-            history. Once at least 6 completed earnings events have sufficient
-            prior data, the <code>analysis.correlation</code> worker will
-            populate this view with Pearson + Spearman coefficients, bootstrap
-            95% CIs, and Benjamini-Hochberg-adjusted p-values.
-          </p>
+      <div className="mb-3 grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_1fr]">
+        <CorrelationLab
+          axes={axes}
+          initialFeature={DEFAULT_FEATURE}
+          initialTarget={DEFAULT_TARGET}
+          initial={scatter}
+        />
+
+        <Panel title="Feature × Feature Heatmap" meta={heatmap.method.toUpperCase()}>
+          {heatmap.features.length === 0 ? (
+            <p className="text-[11px] text-fg-dim">
+              Not enough feature rows. Populate <code>features_earnings</code>.
+            </p>
+          ) : (
+            <Heatmap data={heatmap} />
+          )}
         </Panel>
-      ) : (
-        <Panel title={`${correlations.length} results`} meta="ORDER: p_adjusted ↑" tight>
+      </div>
+
+      <div className="mb-3">
+        <RegressionSummary fits={regressions} />
+      </div>
+
+      <Panel
+        title={`Ranked Univariate Correlations (${correlations.length})`}
+        meta="ORDER: p_adjusted ↑"
+        tight
+      >
+        {correlations.length === 0 ? (
+          <p className="px-3 py-8 text-center text-[11px] text-fg-faint">
+            Run <code>python -m analysis.correlation</code> to populate this table
+            after feature vectors exist.
+          </p>
+        ) : (
           <table className="w-full text-[11px] tabular-nums">
             <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
               <tr>
@@ -75,8 +119,8 @@ export default async function CorrelationsPage() {
               ))}
             </tbody>
           </table>
-        </Panel>
-      )}
+        )}
+      </Panel>
     </Shell>
   );
 }

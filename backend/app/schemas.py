@@ -270,3 +270,69 @@ class MacroSeriesDetail(BaseModel):
     change_90d_pct: float | None
     direction: str
     observations: list[dict]        # {date, value}
+
+
+# ---------- exploratory analysis ----------
+
+
+class ScatterPointOut(BaseModel):
+    ticker: str
+    earnings_id: int
+    report_date: str
+    x: float
+    y: float
+
+
+class RegressionLineOut(BaseModel):
+    slope: float
+    intercept: float
+    r_squared: float
+    n: int
+    x_min: float
+    x_max: float
+    pearson_r: float | None
+    pearson_p: float | None
+    spearman_r: float | None
+    spearman_p: float | None
+    ci_low_at_min: float | None
+    ci_high_at_min: float | None
+    ci_low_at_max: float | None
+    ci_high_at_max: float | None
+
+
+class ScatterResponse(BaseModel):
+    feature: str
+    target: str
+    points: list[ScatterPointOut]
+    line: RegressionLineOut | None
+
+
+class HeatmapResponse(BaseModel):
+    method: str
+    features: list[str]
+    matrix: list[list[float | None]]
+    sample_sizes: list[list[int]]
+
+
+class CoefficientOut(BaseModel):
+    feature: str
+    value: float
+    abs_value: float
+
+
+class RegressionFitOut(BaseModel):
+    method: str
+    target: str
+    n: int
+    features_used: list[str]
+    intercept: float
+    r_squared: float
+    r_squared_loo: float | None
+    rmse: float
+    coefficients: list[CoefficientOut]
+    note: str | None
+
+
+class AnalysisAxesResponse(BaseModel):
+    features: list[str]
+    targets: list[str]

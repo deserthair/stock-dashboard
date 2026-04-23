@@ -296,6 +296,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/axes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Axes */
+        get: operations["get_axes_api_analysis_axes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analysis/scatter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scatter */
+        get: operations["get_scatter_api_analysis_scatter_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analysis/heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Heatmap */
+        get: operations["get_heatmap_api_analysis_heatmap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analysis/regression": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Regressions */
+        get: operations["get_regressions_api_analysis_regression_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hypotheses": {
         parameters: {
             query?: never;
@@ -334,6 +402,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisAxesResponse */
+        AnalysisAxesResponse: {
+            /** Features */
+            features: string[];
+            /** Targets */
+            targets: string[];
+        };
         /** BriefingOut */
         BriefingOut: {
             /**
@@ -386,6 +461,15 @@ export interface components {
             description: string;
             /** Event Type */
             event_type: string;
+        };
+        /** CoefficientOut */
+        CoefficientOut: {
+            /** Feature */
+            feature: string;
+            /** Value */
+            value: number;
+            /** Abs Value */
+            abs_value: number;
         };
         /** CompanyDetail */
         CompanyDetail: {
@@ -539,6 +623,17 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HeatmapResponse */
+        HeatmapResponse: {
+            /** Method */
+            method: string;
+            /** Features */
+            features: string[];
+            /** Matrix */
+            matrix: (number | null)[][];
+            /** Sample Sizes */
+            sample_sizes: number[][];
         };
         /** HypothesisTrackerRow */
         HypothesisTrackerRow: {
@@ -706,6 +801,83 @@ export interface components {
             url: string | null;
             /** Sentiment Score */
             sentiment_score: number | null;
+        };
+        /** RegressionFitOut */
+        RegressionFitOut: {
+            /** Method */
+            method: string;
+            /** Target */
+            target: string;
+            /** N */
+            n: number;
+            /** Features Used */
+            features_used: string[];
+            /** Intercept */
+            intercept: number;
+            /** R Squared */
+            r_squared: number;
+            /** R Squared Loo */
+            r_squared_loo: number | null;
+            /** Rmse */
+            rmse: number;
+            /** Coefficients */
+            coefficients: components["schemas"]["CoefficientOut"][];
+            /** Note */
+            note: string | null;
+        };
+        /** RegressionLineOut */
+        RegressionLineOut: {
+            /** Slope */
+            slope: number;
+            /** Intercept */
+            intercept: number;
+            /** R Squared */
+            r_squared: number;
+            /** N */
+            n: number;
+            /** X Min */
+            x_min: number;
+            /** X Max */
+            x_max: number;
+            /** Pearson R */
+            pearson_r: number | null;
+            /** Pearson P */
+            pearson_p: number | null;
+            /** Spearman R */
+            spearman_r: number | null;
+            /** Spearman P */
+            spearman_p: number | null;
+            /** Ci Low At Min */
+            ci_low_at_min: number | null;
+            /** Ci High At Min */
+            ci_high_at_min: number | null;
+            /** Ci Low At Max */
+            ci_low_at_max: number | null;
+            /** Ci High At Max */
+            ci_high_at_max: number | null;
+        };
+        /** ScatterPointOut */
+        ScatterPointOut: {
+            /** Ticker */
+            ticker: string;
+            /** Earnings Id */
+            earnings_id: number;
+            /** Report Date */
+            report_date: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** ScatterResponse */
+        ScatterResponse: {
+            /** Feature */
+            feature: string;
+            /** Target */
+            target: string;
+            /** Points */
+            points: components["schemas"]["ScatterPointOut"][];
+            line: components["schemas"]["RegressionLineOut"] | null;
         };
         /** SocialPostOut */
         SocialPostOut: {
@@ -1351,6 +1523,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_axes_api_analysis_axes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisAxesResponse"];
+                };
+            };
+        };
+    };
+    get_scatter_api_analysis_scatter_get: {
+        parameters: {
+            query: {
+                feature: string;
+                target: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScatterResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_heatmap_api_analysis_heatmap_get: {
+        parameters: {
+            query?: {
+                method?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeatmapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_regressions_api_analysis_regression_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionFitOut"][];
                 };
             };
         };
