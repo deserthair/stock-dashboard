@@ -41,13 +41,17 @@ export function directionClass(value: number | null | undefined): string {
   return value > 0 ? "text-up" : "text-down";
 }
 
-export function fmtDate(iso: string): string {
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
   // yyyy-mm-dd → mm/dd
   const [, m, d] = iso.split("-");
   return `${m}/${d}`;
 }
 
-export function fmtErLabel(iso: string | null, time: string | null): string {
+export function fmtErLabel(
+  iso: string | null | undefined,
+  time: string | null | undefined,
+): string {
   if (!iso) return "—";
   return `${fmtDate(iso)} ${time ?? ""}`.trim();
 }

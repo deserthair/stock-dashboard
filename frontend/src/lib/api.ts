@@ -100,6 +100,18 @@ export const api = {
   hypothesesTracker: () =>
     get<HypothesisTrackerSummary>("/api/hypotheses", 300),
 
-  macroSeries: (seriesId: string, days = 365) =>
-    get<MacroSeriesDetail>(`/api/macro/${seriesId}?days=${days}`, 600),
+  macroSeries: async (seriesId: string, days = 365) => {
+    const raw = await get<MacroSeriesDetail>(
+      `/api/macro/${seriesId}?days=${days}`,
+      600,
+    );
+    // observations is typed as list[dict] upstream — narrow it here.
+    return {
+      ...raw,
+      observations: (raw.observations as unknown as {
+        date: string;
+        value: number | null;
+      }[]),
+    };
+  },
 };

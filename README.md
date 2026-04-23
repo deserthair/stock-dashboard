@@ -34,8 +34,9 @@ Next.js (3000) ──HTTP──▶ FastAPI (8000) ──SQL──▶ Postgres (5
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
-python -m app.seed            # populate SQLite with universe + demo signals
+pip install -e ".[dev]"
+alembic upgrade head          # create schema (SQLite by default)
+python -m app.seed            # populate with universe + demo signals
 uvicorn app.main:app --reload --port 8000
 # → http://localhost:8000/docs
 ```
@@ -46,8 +47,31 @@ uvicorn app.main:app --reload --port 8000
 cd frontend
 npm install
 cp .env.local.example .env.local
+npm run gen:types             # auto-generate TypeScript types from OpenAPI spec
 npm run dev
 # → http://localhost:3000
+```
+
+### Running workers
+
+```bash
+cd backend
+python -m ingest.scheduler    # starts APScheduler with all 17 jobs
+```
+
+## Tests
+
+```bash
+cd backend && pytest                 # 26 unit + API tests
+cd frontend && npm test              # 22 unit + component tests
+```
+
+## Migrations
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe change"
+alembic upgrade head
 ```
 
 ## Quickstart (Docker Compose)

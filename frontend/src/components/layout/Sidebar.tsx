@@ -8,7 +8,7 @@ interface TickerBlock {
   rows: Array<{ ticker: string; name: string; pct: number | null; pctLabel?: string }>;
 }
 
-function directionClass(pct: number | null): string {
+function directionClass(pct: number | null | undefined): string {
   if (pct === null || pct === undefined) return "text-fg-dim";
   if (Math.abs(pct) < 0.1) return "text-fg-dim";
   return pct > 0 ? "text-up" : "text-down";
@@ -48,7 +48,7 @@ function TickerRow({
 }: {
   ticker: string;
   name: string;
-  pct: number | null;
+  pct: number | null | undefined;
   pctLabel?: string;
   href?: string;
   active?: boolean;

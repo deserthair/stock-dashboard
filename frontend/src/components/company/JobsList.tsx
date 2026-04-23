@@ -31,15 +31,15 @@ export function JobsList({ items }: { items: JobsSnapshotOut[] }) {
             {latest.corporate_count} corporate / eng / tech
           </div>
         )}
-        {Object.keys(latest.by_department || {}).length > 0 && (
+        {Object.keys(latest.by_department ?? {}).length > 0 && (
           <div className="mt-3 grid grid-cols-2 gap-1 text-[11px] md:grid-cols-3">
-            {Object.entries(latest.by_department)
-              .sort((a, b) => b[1] - a[1])
+            {Object.entries(latest.by_department as Record<string, number>)
+              .sort((a, b) => Number(b[1]) - Number(a[1]))
               .slice(0, 9)
               .map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-2 border-b border-border py-1">
                   <span className="truncate text-fg-dim">{k}</span>
-                  <span className="tabular-nums">{v}</span>
+                  <span className="tabular-nums">{String(v)}</span>
                 </div>
               ))}
           </div>

@@ -48,6 +48,7 @@ def get_company(ticker: str, db: Session = Depends(get_db)) -> CompanyDetail:
         ir_url=c.ir_url,
         careers_url=c.careers_url,
         ceo_name=c.ceo_name,
+        cik=c.cik,
         signals=signals,
     )
 

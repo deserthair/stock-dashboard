@@ -96,6 +96,7 @@ class CompanyDetail(BaseModel):
     ir_url: str | None
     careers_url: str | None
     ceo_name: str | None
+    cik: str | None
     signals: UniverseRow
 
 

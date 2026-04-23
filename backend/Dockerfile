@@ -6,11 +6,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml ./
+COPY pyproject.toml alembic.ini ./
 RUN pip install --no-cache-dir -e ".[postgres]"
 
 COPY app ./app
 COPY ingest ./ingest
+COPY normalize ./normalize
+COPY features ./features
+COPY analysis ./analysis
+COPY db ./db
 
 RUN mkdir -p /app/data
 
