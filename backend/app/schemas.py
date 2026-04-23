@@ -288,6 +288,29 @@ class EarningsPostmortemOut(BaseModel):
     tags: list[str]
 
 
+class TrendsQueryOut(BaseModel):
+    query_id: int
+    query: str
+    label: str
+    category: str
+    ticker: str | None
+    last_fetched_at: datetime | None
+
+
+class TrendsObservationOut(BaseModel):
+    obs_date: date
+    value: float | None
+    ratio_to_mean: float | None
+
+
+class TrendsSeriesOut(BaseModel):
+    query: TrendsQueryOut
+    observations: list[TrendsObservationOut]
+    latest: float | None
+    change_30d_pct: float | None
+    change_90d_pct: float | None
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int

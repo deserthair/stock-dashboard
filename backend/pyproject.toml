@@ -23,6 +23,7 @@ dependencies = [
     "scipy>=1.13",
     "statsmodels>=0.14",
     "scikit-learn>=1.5",
+    "pytrends>=4.9",
 ]
 
 [project.optional-dependencies]

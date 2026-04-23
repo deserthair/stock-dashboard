@@ -415,6 +415,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Queries */
+        get: operations["list_queries_api_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trends/{query_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Series */
+        get: operations["get_series_api_trends__query_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/source-runs": {
         parameters: {
             query?: never;
@@ -1047,6 +1081,45 @@ export interface components {
             features_active: number;
             /** Median R */
             median_r: number;
+        };
+        /** TrendsObservationOut */
+        TrendsObservationOut: {
+            /**
+             * Obs Date
+             * Format: date
+             */
+            obs_date: string;
+            /** Value */
+            value: number | null;
+            /** Ratio To Mean */
+            ratio_to_mean: number | null;
+        };
+        /** TrendsQueryOut */
+        TrendsQueryOut: {
+            /** Query Id */
+            query_id: number;
+            /** Query */
+            query: string;
+            /** Label */
+            label: string;
+            /** Category */
+            category: string;
+            /** Ticker */
+            ticker: string | null;
+            /** Last Fetched At */
+            last_fetched_at: string | null;
+        };
+        /** TrendsSeriesOut */
+        TrendsSeriesOut: {
+            query: components["schemas"]["TrendsQueryOut"];
+            /** Observations */
+            observations: components["schemas"]["TrendsObservationOut"][];
+            /** Latest */
+            latest: number | null;
+            /** Change 30D Pct */
+            change_30d_pct: number | null;
+            /** Change 90D Pct */
+            change_90d_pct: number | null;
         };
         /** UniverseRow */
         UniverseRow: {
@@ -1847,6 +1920,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HypothesisTrackerSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_queries_api_trends_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+                ticker?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendsQueryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_series_api_trends__query_id__get: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+            };
+            header?: never;
+            path: {
+                query_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendsSeriesOut"];
                 };
             };
             /** @description Validation Error */

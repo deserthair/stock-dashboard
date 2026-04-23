@@ -20,6 +20,8 @@ import type {
   ScatterResponse,
   SocialPostOut,
   SourceRunOut,
+  TrendsQueryOut,
+  TrendsSeriesOut,
   UniverseRow,
   UpcomingEarnings,
 } from "./types";
@@ -175,6 +177,20 @@ export const api = {
   postmortem: (earningsId: number) =>
     get<EarningsPostmortemOut>(
       `/api/earnings/${earningsId}/postmortem`,
+      600,
+    ),
+
+  trendsQueries: (params: { category?: string; ticker?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.category) qs.set("category", params.category);
+    if (params.ticker) qs.set("ticker", params.ticker.toUpperCase());
+    const s = qs.toString();
+    return get<TrendsQueryOut[]>(`/api/trends${s ? `?${s}` : ""}`, 600);
+  },
+
+  trendsSeries: (queryId: number, range?: DateRange) =>
+    get<TrendsSeriesOut>(
+      withRange(`/api/trends/${queryId}`, range),
       600,
     ),
 

@@ -16,6 +16,7 @@ from .routes import (
     news,
     ops,
     social,
+    trends,
     universe,
 )
 
@@ -58,4 +59,5 @@ app.include_router(social.router)
 app.include_router(jobs.router)
 app.include_router(analysis.router)
 app.include_router(hypotheses.router)
+app.include_router(trends.router)
 app.include_router(ops.router)

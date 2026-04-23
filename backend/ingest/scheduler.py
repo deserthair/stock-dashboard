@@ -46,6 +46,7 @@ from ingest.sources import (
     pr_pages as src_pr,
     prices as src_prices,
     reddit as src_reddit,
+    trends as src_trends,
     weather as src_weather,
 )
 from normalize import briefing as norm_briefing
@@ -73,6 +74,8 @@ JOBS = [
     (src_macro.run_once,       "macro",        {"trigger": "cron", "hour": 7}),
     (src_weather.run_once,     "weather",      {"trigger": "cron", "hour": 6}),
     (src_jobs.run_once,        "jobs",         {"trigger": "cron", "day_of_week": "mon", "hour": 5}),
+    # Google Trends is rate-limited; pull twice a week (Tue + Fri).
+    (src_trends.run_once,      "trends",       {"trigger": "cron", "day_of_week": "tue,fri", "hour": 3}),
 
     (norm_sentiment.run_once,  "sentiment",    {"trigger": "interval", "minutes": 30}),
     (norm_signals.run_once,    "signals",      {"trigger": "interval", "minutes": 30}),

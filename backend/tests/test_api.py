@@ -288,3 +288,46 @@ def test_postmortem_404(client):
     upcoming = next(e for e in earn_rows if e["fiscal_period"] == "Q2 2026")
     r = client.get(f"/api/earnings/{upcoming['earnings_id']}/postmortem")
     assert r.status_code == 404
+
+
+# ---------- trends ----------
+
+
+def test_trends_queries_have_expected_cohorts(client):
+    rows = client.get("/api/trends").json()
+    assert len(rows) >= 16
+    cats = {r["category"] for r in rows}
+    assert {"company", "menu", "segment", "macro"}.issubset(cats)
+
+
+def test_trends_queries_filter_by_ticker(client):
+    rows = client.get("/api/trends?ticker=CMG").json()
+    assert len(rows) >= 2
+    assert all(r["ticker"] == "CMG" for r in rows)
+    assert {r["category"] for r in rows}.issuperset({"company", "menu"})
+
+
+def test_trends_series_observations(client):
+    rows = client.get("/api/trends?ticker=CMG").json()
+    brand = next(r for r in rows if r["category"] == "company")
+    detail = client.get(f"/api/trends/{brand['query_id']}").json()
+    assert detail["query"]["query"] == "Chipotle"
+    assert len(detail["observations"]) >= 100
+    assert detail["latest"] is not None
+    assert isinstance(detail["change_90d_pct"], (int, float))
+
+
+def test_trends_series_404(client):
+    r = client.get("/api/trends/99999")
+    assert r.status_code == 404
+
+
+def test_trends_series_date_range(client):
+    rows = client.get("/api/trends?ticker=CMG").json()
+    brand = next(r for r in rows if r["category"] == "company")
+    narrow = client.get(
+        f"/api/trends/{brand['query_id']}"
+        "?start_date=2025-01-01&end_date=2025-06-30"
+    ).json()
+    for o in narrow["observations"]:
+        assert "2025-01-01" <= o["obs_date"] <= "2025-06-30"

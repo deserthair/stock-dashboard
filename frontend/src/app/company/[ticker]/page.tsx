@@ -13,6 +13,7 @@ import { PostmortemCard } from "@/components/company/PostmortemCard";
 import { PriceChart } from "@/components/company/PriceChart";
 import { SocialList } from "@/components/company/SocialList";
 import { Tabs } from "@/components/company/Tabs";
+import { TrendsCard } from "@/components/trends/TrendsSparkline";
 import {
   directionClass,
   fmtErLabel,
@@ -59,6 +60,18 @@ export default async function CompanyPage({
     await Promise.all(
       earnings.map((e) =>
         api.postmortem(e.earnings_id).catch(() => null),
+      ),
+    )
+  ).filter((x): x is NonNullable<typeof x> => x !== null);
+
+  // Fetch Google Trends series for this ticker (brand + menu queries).
+  const trendsQueries = await api
+    .trendsQueries({ ticker: params.ticker })
+    .catch(() => []);
+  const trendsSeries = (
+    await Promise.all(
+      trendsQueries.map((q) =>
+        api.trendsSeries(q.query_id, range).catch(() => null),
       ),
     )
   ).filter((x): x is NonNullable<typeof x> => x !== null);
@@ -134,6 +147,19 @@ export default async function CompanyPage({
           </ul>
         </Panel>
       </div>
+
+      {trendsSeries.length > 0 && (
+        <div className="mt-3">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-fg-faint">
+            Google Trends · {company.ticker}
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {trendsSeries.map((t) => (
+              <TrendsCard key={t.query.query_id} series={t} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 

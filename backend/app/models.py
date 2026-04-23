@@ -241,6 +241,37 @@ class WeatherObservation(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class TrendsQuery(Base):
+    """Metadata for a Google Trends search term we track."""
+
+    __tablename__ = "trends_queries"
+
+    query_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    query: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    label: Mapped[str] = mapped_column(String(128))
+    category: Mapped[str] = mapped_column(String(32))   # company / menu / macro / segment
+    ticker: Mapped[str | None] = mapped_column(String(8))
+    last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class TrendsObservation(Base):
+    """One data point per (query, week).
+
+    Google Trends normalizes interest to [0, 100] within the window of the
+    request, so absolute values are only meaningful within a single series.
+    We store `ratio_to_mean` so queries become comparable after the fact."""
+
+    __tablename__ = "trends_observations"
+
+    query_id: Mapped[int] = mapped_column(
+        ForeignKey("trends_queries.query_id"), primary_key=True
+    )
+    obs_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    value: Mapped[float | None] = mapped_column(Float)
+    ratio_to_mean: Mapped[float | None] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 # ---------- features + analytics ----------
 
 

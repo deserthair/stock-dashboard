@@ -21,6 +21,8 @@ from .models import (
     Event,
     MacroSeries,
     PriceDaily,
+    TrendsObservation,
+    TrendsQuery,
 )
 
 UNIVERSE = [
@@ -499,6 +501,8 @@ def run() -> None:
 
         # --- demo postmortems (text seeded so UI has something without a Claude key)
         _seed_demo_postmortems(s, by_ticker)
+        # --- demo Trends series so /api/trends renders without pytrends
+        _seed_demo_trends(s, by_ticker)
         s.commit()
 
     # Run a one-shot correlation pass now that features exist so the
@@ -609,6 +613,99 @@ def _seed_demo_postmortems(s, by_ticker: dict) -> None:
                 tags=tags,
             )
         )
+
+
+DEMO_TRENDS_BASE = {
+    # Per-ticker (query, label, category, ticker, trajectory) where trajectory
+    # is a (slope, amplitude, phase_weeks) tuple for the 260-week synthetic walk.
+    "CMG":  ("Chipotle",         "CMG brand",         "company", "CMG",  (0.15,  8, 0)),
+    "SBUX": ("Starbucks",        "SBUX brand",        "company", "SBUX", (-0.03, 12, 4)),
+    "MCD":  ("McDonalds",        "MCD brand",         "company", "MCD",  (0.05, 15, 2)),
+    "CAVA": ("Cava Grill",       "CAVA brand",        "company", "CAVA", (0.30,  6, 0)),
+    "TXRH": ("Texas Roadhouse",  "TXRH brand",        "company", "TXRH", (-0.02, 10, 3)),
+    "WING": ("Wingstop",         "WING brand",        "company", "WING", (0.18,  9, 1)),
+    "DPZ":  ("Dominos",          "DPZ brand",         "company", "DPZ",  (0.04,  7, 2)),
+    "QSR":  ("Tim Hortons",      "QSR brand",         "company", "QSR",  (-0.01, 11, 5)),
+}
+
+DEMO_TRENDS_MENU = {
+    "CMG":  ("chipotle protein bowl", "CMG menu", "menu", "CMG",  (0.42,  14, 0)),
+    "SBUX": ("starbucks pumpkin spice","SBUX menu","menu","SBUX", (0.08,  35, 10)),  # strong seasonality
+    "MCD":  ("big mac",               "MCD menu", "menu", "MCD",  (0.01,  5,  0)),
+    "CAVA": ("cava bowl",             "CAVA menu","menu", "CAVA", (0.50,  10, 2)),
+    "TXRH": ("texas roadhouse rolls", "TXRH menu","menu", "TXRH", (0.02,  6,  0)),
+    "WING": ("wingstop flavors",      "WING menu","menu", "WING", (0.22,  8,  1)),
+    "DPZ":  ("dominos delivery",      "DPZ menu", "menu", "DPZ",  (-0.05, 7,  0)),
+    "QSR":  ("popeyes chicken sandwich","QSR menu","menu","QSR", (0.12,  20, 4)),
+}
+
+DEMO_TRENDS_SEGMENT = [
+    ("fast casual restaurants", "Fast casual", "segment", None, (0.10, 4, 0)),
+    ("QSR earnings",            "QSR earnings","segment", None, (0.04, 8, 2)),
+    ("casual dining",           "Casual dining","segment",None, (-0.08, 5, 3)),
+    ("fast food delivery",      "Fast food delivery","segment",None, (0.20, 6, 1)),
+]
+
+DEMO_TRENDS_MACRO = [
+    ("restaurant inflation", "Restaurant inflation", "macro", None, (0.30,  7, 0)),
+    ("fast food prices",     "Fast food prices",     "macro", None, (0.35, 10, 2)),
+    ("dining out",           "Dining out",           "macro", None, (-0.04, 8, 5)),
+    ("grocery vs restaurant","Grocery vs restaurant","macro", None, (0.18,  5, 3)),
+]
+
+
+def _seed_demo_trends(s, by_ticker: dict) -> None:
+    """Synthesize 3 years of weekly Trends-style data per tracked query.
+
+    Each query is a noisy linear trend plus a sinusoidal seasonality term,
+    normalized to [0, 100]. Overwrites any prior demo data."""
+    s.query(TrendsObservation).delete()
+    s.query(TrendsQuery).delete()
+
+    rng = random.Random(0xA1B)
+    all_specs = (
+        list(DEMO_TRENDS_BASE.values())
+        + list(DEMO_TRENDS_MENU.values())
+        + DEMO_TRENDS_SEGMENT
+        + DEMO_TRENDS_MACRO
+    )
+
+    end = date(2026, 4, 20)  # most-recent Monday close to seed anchor
+    n_weeks = 156  # 3 years
+    for (query, label, category, ticker, traj) in all_specs:
+        slope, amplitude, phase = traj
+        q = TrendsQuery(
+            query=query,
+            label=label,
+            category=category,
+            ticker=ticker,
+            last_fetched_at=datetime.utcnow(),
+        )
+        s.add(q)
+        s.flush()
+
+        base = 40.0
+        raw = []
+        for i in range(n_weeks):
+            week_ts = end - timedelta(weeks=n_weeks - 1 - i)
+            trend_component = slope * i
+            seasonal = amplitude * math.sin((i + phase) / 8.0)
+            noise = rng.gauss(0, 3)
+            raw.append((week_ts, base + trend_component + seasonal + noise))
+
+        # Scale to [0, 100] the way Trends does, using the window max.
+        max_v = max(v for _, v in raw) or 1.0
+        scaled = [(d, max(0.0, min(100.0, v / max_v * 100))) for d, v in raw]
+        mean_v = sum(v for _, v in scaled) / len(scaled) if scaled else 1.0
+        for d, v in scaled:
+            s.add(
+                TrendsObservation(
+                    query_id=q.query_id,
+                    obs_date=d,
+                    value=round(v, 2),
+                    ratio_to_mean=round(v / mean_v, 3) if mean_v else None,
+                )
+            )
 
 
 if __name__ == "__main__":
