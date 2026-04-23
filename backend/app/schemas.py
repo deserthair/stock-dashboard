@@ -218,3 +218,54 @@ class CompanyPriceHistory(BaseModel):
     ticker: str
     bars: list[PriceBar]
     markers: list[ChartMarker]
+
+
+class EarningsRow(BaseModel):
+    earnings_id: int
+    ticker: str
+    name: str | None
+    report_date: date
+    fiscal_period: str | None
+    time_of_day: str | None
+    eps_estimate: float | None
+    eps_actual: float | None
+    revenue_estimate: float | None
+    revenue_actual: float | None
+    eps_beat: bool | None
+    eps_surprise_pct: float | None
+    post_earnings_1d_return: float | None
+    post_earnings_5d_return: float | None
+    reaction: str | None
+    hypothesis_score: float | None
+    hypothesis_label: str | None
+
+
+class HypothesisTrackerRow(BaseModel):
+    ticker: str
+    report_date: date
+    fiscal_period: str | None
+    hypothesis_score: float | None
+    hypothesis_label: str | None
+    actual: str | None             # BEAT / MISS based on eps_actual vs estimate
+    reaction: str | None            # beat_rally / beat_sell / miss_rally / miss_sell
+    eps_surprise_pct: float | None
+    post_earnings_1d_return: float | None
+    prediction_correct: bool | None
+
+
+class HypothesisTrackerSummary(BaseModel):
+    total: int
+    scored: int
+    correct: int
+    accuracy_pct: float | None
+    rows: list[HypothesisTrackerRow]
+
+
+class MacroSeriesDetail(BaseModel):
+    series_id: str
+    label: str
+    latest_value: float | None
+    latest_date: date | None
+    change_90d_pct: float | None
+    direction: str
+    observations: list[dict]        # {date, value}

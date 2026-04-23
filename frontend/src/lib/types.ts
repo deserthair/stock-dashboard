@@ -202,3 +202,59 @@ export interface CompanyPriceHistory {
   bars: PriceBar[];
   markers: ChartMarker[];
 }
+
+export interface EarningsRow {
+  earnings_id: number;
+  ticker: string;
+  name: string | null;
+  report_date: string;
+  fiscal_period: string | null;
+  time_of_day: string | null;
+  eps_estimate: number | null;
+  eps_actual: number | null;
+  revenue_estimate: number | null;
+  revenue_actual: number | null;
+  eps_beat: boolean | null;
+  eps_surprise_pct: number | null;
+  post_earnings_1d_return: number | null;
+  post_earnings_5d_return: number | null;
+  reaction: string | null;
+  hypothesis_score: number | null;
+  hypothesis_label: string | null;
+}
+
+export interface HypothesisTrackerRow {
+  ticker: string;
+  report_date: string;
+  fiscal_period: string | null;
+  hypothesis_score: number | null;
+  hypothesis_label: string | null;
+  actual: string | null;
+  reaction: string | null;
+  eps_surprise_pct: number | null;
+  post_earnings_1d_return: number | null;
+  prediction_correct: boolean | null;
+}
+
+export interface HypothesisTrackerSummary {
+  total: number;
+  scored: number;
+  correct: number;
+  accuracy_pct: number | null;
+  rows: HypothesisTrackerRow[];
+}
+
+export interface MacroObservation {
+  date: string;
+  value: number | null;
+}
+
+export interface MacroSeriesDetail {
+  series_id: string;
+  label: string;
+  latest_value: number | null;
+  latest_date: string | null;
+  change_90d_pct: number | null;
+  direction: "up" | "down" | "flat";
+  observations: MacroObservation[];
+}

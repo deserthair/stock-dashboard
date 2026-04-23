@@ -10,6 +10,7 @@ from .routes import (
     earnings,
     events,
     filings,
+    hypotheses,
     jobs,
     macro,
     news,
@@ -56,4 +57,5 @@ app.include_router(filings.router)
 app.include_router(social.router)
 app.include_router(jobs.router)
 app.include_router(analysis.router)
+app.include_router(hypotheses.router)
 app.include_router(ops.router)

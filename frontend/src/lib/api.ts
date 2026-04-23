@@ -3,10 +3,13 @@ import type {
   CompanyDetail,
   CompanyPriceHistory,
   CorrelationOut,
+  EarningsRow,
   EventOut,
   FilingOut,
+  HypothesisTrackerSummary,
   JobsSnapshotOut,
   MacroRow,
+  MacroSeriesDetail,
   NewsItemOut,
   RedditPostOut,
   SocialPostOut,
@@ -84,4 +87,19 @@ export const api = {
 
   sourceRuns: (limit = 30) =>
     get<SourceRunOut[]>(`/api/ops/source-runs?limit=${limit}`, 30),
+
+  earningsAll: (params: { ticker?: string; past_only?: boolean; upcoming_only?: boolean } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.ticker) qs.set("ticker", params.ticker.toUpperCase());
+    if (params.past_only) qs.set("past_only", "true");
+    if (params.upcoming_only) qs.set("upcoming_only", "true");
+    const s = qs.toString();
+    return get<EarningsRow[]>(`/api/earnings${s ? `?${s}` : ""}`, 300);
+  },
+
+  hypothesesTracker: () =>
+    get<HypothesisTrackerSummary>("/api/hypotheses", 300),
+
+  macroSeries: (seriesId: string, days = 365) =>
+    get<MacroSeriesDetail>(`/api/macro/${seriesId}?days=${days}`, 600),
 };

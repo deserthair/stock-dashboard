@@ -150,6 +150,31 @@ EARNINGS_ESTIMATES = {
 }
 
 
+# Historical earnings fixtures — one prior Q per ticker, enough to populate
+# the hypothesis tracker and correlation scaffolding with something real to
+# look at until backfill workers run against live data.
+HISTORICAL_EARNINGS = [
+    # (ticker, report_date, fiscal_period, tod, eps_est, eps_act, rev_est, rev_act, hyp_score)
+    ("CMG",  "2026-01-29", "Q4 2025", "AMC", 0.45, 0.49, 2_780_000_000, 2_820_000_000,  0.28),
+    ("CMG",  "2025-10-23", "Q3 2025", "AMC", 0.39, 0.41, 2_510_000_000, 2_550_000_000,  0.15),
+    ("CMG",  "2025-07-24", "Q2 2025", "AMC", 0.42, 0.38, 2_650_000_000, 2_590_000_000, -0.10),
+    ("SBUX", "2026-01-30", "Q1 2026", "AMC", 0.79, 0.71, 9_080_000_000, 8_860_000_000, -0.22),
+    ("SBUX", "2025-10-29", "Q4 2025", "AMC", 0.83, 0.80, 9_240_000_000, 9_100_000_000, -0.08),
+    ("MCD",  "2026-02-05", "Q4 2025", "BMO", 2.82, 2.80, 6_450_000_000, 6_430_000_000,  0.05),
+    ("MCD",  "2025-10-28", "Q3 2025", "BMO", 3.18, 3.23, 6_820_000_000, 6_870_000_000,  0.18),
+    ("CAVA", "2026-02-25", "Q4 2025", "AMC", 0.12, 0.15,   275_000_000,   286_000_000,  0.35),
+    ("CAVA", "2025-11-07", "Q3 2025", "AMC", 0.14, 0.17,   261_000_000,   271_000_000,  0.40),
+    ("TXRH", "2026-02-20", "Q4 2025", "AMC", 1.52, 1.48, 1_340_000_000, 1_322_000_000, -0.12),
+    ("TXRH", "2025-10-30", "Q3 2025", "AMC", 1.45, 1.42, 1_280_000_000, 1_265_000_000, -0.18),
+    ("WING", "2026-02-26", "Q4 2025", "BMO", 0.88, 0.96,   158_000_000,   164_500_000,  0.32),
+    ("WING", "2025-11-06", "Q3 2025", "BMO", 0.91, 0.89,   152_000_000,   150_500_000,  0.22),
+    ("DPZ",  "2026-02-27", "Q4 2025", "BMO", 4.35, 4.28, 1_520_000_000, 1_501_000_000,  0.02),
+    ("DPZ",  "2025-10-09", "Q3 2025", "BMO", 4.10, 4.19, 1_470_000_000, 1_488_000_000,  0.11),
+    ("QSR",  "2026-02-12", "Q4 2025", "BMO", 0.80, 0.76, 1_890_000_000, 1_860_000_000, -0.15),
+    ("QSR",  "2025-11-05", "Q3 2025", "BMO", 0.85, 0.83, 1_950_000_000, 1_930_000_000, -0.05),
+]
+
+
 MACRO_ROWS = [
     ("PBEEFUSDM", "Live Cattle (PBEEF)",      8.4,  "+8.4%",  "up",   21),
     ("WPU0211",   "Chicken (WPU0211)",        -3.1, "-3.1%",  "down", 8),
@@ -335,7 +360,7 @@ def run() -> None:
         # the internet. yfinance ingest overwrites these rows once it can fetch real data.
         _seed_prices(s, by_ticker)
 
-        # --- upcoming earnings
+        # --- upcoming + historical earnings
         s.query(Earnings).delete()
         for ticker, sig in SIGNALS.items():
             if ticker not in EARNINGS_ESTIMATES:
@@ -350,6 +375,27 @@ def run() -> None:
                     eps_estimate=est["eps_estimate"],
                     revenue_estimate=est["revenue_estimate"],
                     hypothesis_score=sig["hyp"][1],
+                )
+            )
+        for (ticker, dt, period, tod, eps_est, eps_act, rev_est, rev_act, hyp) in HISTORICAL_EARNINGS:
+            if ticker not in by_ticker:
+                continue
+            surprise = (
+                round((eps_act - eps_est) / max(abs(eps_est), 1e-9) * 100, 2)
+                if eps_est else None
+            )
+            s.add(
+                Earnings(
+                    company_id=by_ticker[ticker].company_id,
+                    report_date=date.fromisoformat(dt),
+                    fiscal_period=period,
+                    time_of_day=tod,
+                    eps_estimate=eps_est,
+                    eps_actual=eps_act,
+                    revenue_estimate=rev_est,
+                    revenue_actual=rev_act,
+                    eps_surprise_pct=surprise,
+                    hypothesis_score=hyp,
                 )
             )
 
