@@ -195,3 +195,26 @@ class SourceRunOut(BaseModel):
     status: str
     rows_fetched: int
     error_msg: str | None
+
+
+class PriceBar(BaseModel):
+    date: date
+    open: float | None
+    high: float | None
+    low: float | None
+    close: float | None
+    volume: int | None
+
+
+class ChartMarker(BaseModel):
+    date: date
+    severity: str
+    source: str | None
+    description: str
+    event_type: str
+
+
+class CompanyPriceHistory(BaseModel):
+    ticker: str
+    bars: list[PriceBar]
+    markers: list[ChartMarker]

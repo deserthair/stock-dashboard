@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from ..db import get_db
-from ..models import Company
-from ..schemas import CompanyDetail, UniverseRow
+from ..models import Company, Event, PriceDaily
+from ..schemas import ChartMarker, CompanyDetail, CompanyPriceHistory, PriceBar, UniverseRow
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
 
@@ -47,4 +49,52 @@ def get_company(ticker: str, db: Session = Depends(get_db)) -> CompanyDetail:
         careers_url=c.careers_url,
         ceo_name=c.ceo_name,
         signals=signals,
+    )
+
+
+@router.get("/{ticker}/prices", response_model=CompanyPriceHistory)
+def get_company_prices(
+    ticker: str,
+    db: Session = Depends(get_db),
+    days: int = Query(default=90, ge=5, le=3650),
+) -> CompanyPriceHistory:
+    c = db.query(Company).filter(Company.ticker == ticker.upper()).one_or_none()
+    if c is None:
+        raise HTTPException(status_code=404, detail=f"Unknown ticker {ticker}")
+
+    cutoff = date.today() - timedelta(days=days)
+    bars = (
+        db.query(PriceDaily)
+        .filter(PriceDaily.company_id == c.company_id, PriceDaily.trade_date >= cutoff)
+        .order_by(PriceDaily.trade_date)
+        .all()
+    )
+    events = (
+        db.query(Event)
+        .filter(
+            Event.company_id == c.company_id,
+            Event.event_at >= datetime.combine(cutoff, datetime.min.time()),
+        )
+        .order_by(Event.event_at)
+        .all()
+    )
+    return CompanyPriceHistory(
+        ticker=c.ticker,
+        bars=[
+            PriceBar(
+                date=b.trade_date,
+                open=b.open, high=b.high, low=b.low, close=b.close, volume=b.volume,
+            )
+            for b in bars
+        ],
+        markers=[
+            ChartMarker(
+                date=e.event_at.date(),
+                severity=e.severity,
+                source=e.source,
+                description=e.description,
+                event_type=e.event_type,
+            )
+            for e in events
+        ],
     )

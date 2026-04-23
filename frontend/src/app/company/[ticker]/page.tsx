@@ -7,6 +7,7 @@ import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { FilingsList } from "@/components/company/FilingsList";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
+import { PriceChart } from "@/components/company/PriceChart";
 import { SocialList } from "@/components/company/SocialList";
 import { Tabs } from "@/components/company/Tabs";
 import {
@@ -31,14 +32,16 @@ export default async function CompanyPage({
   let filings;
   let social;
   let jobs;
+  let prices;
   try {
-    [company, universe, news, filings, social, jobs] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30).catch(() => []),
       api.filings(params.ticker, 30).catch(() => []),
       api.social(params.ticker, 30).catch(() => []),
       api.jobs(params.ticker, 12).catch(() => []),
+      api.companyPrices(params.ticker, 90).catch(() => ({ ticker: params.ticker.toUpperCase(), bars: [], markers: [] })),
     ]);
   } catch {
     notFound();
@@ -92,12 +95,16 @@ export default async function CompanyPage({
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
-        <Panel title="Price · Events · 90D" meta="INTRADAY · YFINANCE">
-          <div className="flex h-60 items-center justify-center border border-border bg-panel-2 text-fg-faint">
-            <span className="text-[11px] uppercase tracking-[0.15em]">
-              Chart — lightweight-charts wiring · Phase 1
-            </span>
-          </div>
+        <Panel title="Price · Events · 90D" meta={`${prices.bars.length} BARS · ${prices.markers.length} EVENTS`}>
+          {prices.bars.length > 0 ? (
+            <PriceChart bars={prices.bars} markers={prices.markers} />
+          ) : (
+            <div className="flex h-60 items-center justify-center border border-border bg-panel-2 text-fg-faint">
+              <span className="text-[11px] uppercase tracking-[0.15em]">
+                Waiting for yfinance · no prices yet
+              </span>
+            </div>
+          )}
         </Panel>
 
         <Panel title="Feature Vector" meta="FEATURE_VERSION v0">

@@ -51,6 +51,20 @@ def run_once() -> int:
                     rows_written += 1
 
                 closes = hist["Close"].dropna().tolist()
+                # Benchmarks get the minimal signal update (last_price + Δ); they are
+                # hidden from /api/universe but feed rs_vs_xly for the tracked companies.
+                if c.is_benchmark:
+                    if len(closes) >= 2:
+                        sig = s.get(CompanySignal, c.company_id) or CompanySignal(
+                            company_id=c.company_id
+                        )
+                        sig.last_price = float(closes[-1])
+                        sig.change_1d_pct = round((closes[-1] / closes[-2] - 1) * 100, 2)
+                        if len(closes) >= 31:
+                            sig.change_30d_pct = round((closes[-1] / closes[-31] - 1) * 100, 2)
+                        s.merge(sig)
+                    continue
+
                 if len(closes) >= 2:
                     sig = s.get(CompanySignal, c.company_id) or CompanySignal(
                         company_id=c.company_id
@@ -62,6 +76,20 @@ def run_once() -> int:
                     if len(closes) >= 31:
                         sig.change_30d_pct = round((closes[-1] / closes[-31] - 1) * 100, 2)
                     s.merge(sig)
+
+            # Pass 2: now that all close-changes are up to date, recompute rs_vs_xly
+            xly = s.query(Company).filter(Company.ticker == "XLY").one_or_none()
+            if xly:
+                xly_sig = s.get(CompanySignal, xly.company_id)
+                if xly_sig and xly_sig.change_30d_pct is not None:
+                    for c in companies:
+                        if c.is_benchmark:
+                            continue
+                        sig = s.get(CompanySignal, c.company_id)
+                        if sig and sig.change_30d_pct is not None:
+                            sig.rs_vs_xly = round(
+                                sig.change_30d_pct - xly_sig.change_30d_pct, 1
+                            )
 
             s.commit()
 

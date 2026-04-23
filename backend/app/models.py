@@ -34,6 +34,7 @@ class Company(Base):
     ceo_name: Mapped[str | None] = mapped_column(String(128))
     cik: Mapped[str | None] = mapped_column(String(16))  # SEC CIK, 10-digit padded
     pr_page_url: Mapped[str | None] = mapped_column(String(256))
+    is_benchmark: Mapped[bool] = mapped_column(Boolean, default=False)
 
     prices: Mapped[list["PriceDaily"]] = relationship(back_populates="company")
     earnings: Mapped[list["Earnings"]] = relationship(back_populates="company")

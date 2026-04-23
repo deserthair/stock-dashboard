@@ -13,6 +13,7 @@ def list_universe(db: Session = Depends(get_db)) -> list[UniverseRow]:
     companies = (
         db.query(Company)
         .options(joinedload(Company.signals))
+        .filter(Company.is_benchmark.is_(False))
         .order_by(Company.ticker)
         .all()
     )

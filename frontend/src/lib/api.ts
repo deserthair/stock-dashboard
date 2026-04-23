@@ -1,6 +1,7 @@
 import type {
   BriefingResponse,
   CompanyDetail,
+  CompanyPriceHistory,
   CorrelationOut,
   EventOut,
   FilingOut,
@@ -36,6 +37,12 @@ export const api = {
   macro: () => get<MacroRow[]>("/api/macro", 300),
   company: (ticker: string) =>
     get<CompanyDetail>(`/api/companies/${ticker.toUpperCase()}`, 300),
+
+  companyPrices: (ticker: string, days = 90) =>
+    get<CompanyPriceHistory>(
+      `/api/companies/${ticker.toUpperCase()}/prices?days=${days}`,
+      120,
+    ),
 
   news: (ticker?: string, limit = 50) =>
     get<NewsItemOut[]>(

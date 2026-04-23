@@ -179,3 +179,26 @@ export interface SourceRunOut {
   rows_fetched: number;
   error_msg: string | null;
 }
+
+export interface PriceBar {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+export interface ChartMarker {
+  date: string;
+  severity: "hi" | "md" | "lo";
+  source: string | null;
+  description: string;
+  event_type: string;
+}
+
+export interface CompanyPriceHistory {
+  ticker: string;
+  bars: PriceBar[];
+  markers: ChartMarker[];
+}

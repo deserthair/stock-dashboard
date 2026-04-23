@@ -48,7 +48,9 @@ from ingest.sources import (
     reddit as src_reddit,
     weather as src_weather,
 )
+from normalize import briefing as norm_briefing
 from normalize import events as norm_events
+from normalize import hypothesis as norm_hypothesis
 from normalize import sentiment as norm_sentiment
 from normalize import signals as norm_signals
 
@@ -74,6 +76,10 @@ JOBS = [
     (norm_sentiment.run_once,  "sentiment",    {"trigger": "interval", "minutes": 30}),
     (norm_signals.run_once,    "signals",      {"trigger": "interval", "minutes": 30}),
     (norm_events.run_once,     "events",       {"trigger": "interval", "minutes": 30}),
+    (norm_hypothesis.run_once, "hypothesis",   {"trigger": "interval", "minutes": 30}),
+    # Briefing is expensive (Sonnet) — run at 6am ET pre-market and once more mid-day.
+    (norm_briefing.run_once,   "briefing_am",  {"trigger": "cron", "hour": 10}),
+    (norm_briefing.run_once,   "briefing_pm",  {"trigger": "cron", "hour": 18}),
 
     (features_engineer.run_once, "features",   {"trigger": "cron", "hour": 8}),
     (analysis_corr.run_once,   "correlations", {"trigger": "cron", "hour": 8, "minute": 30}),

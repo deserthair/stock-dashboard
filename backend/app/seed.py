@@ -6,6 +6,8 @@ overwrite the price/earnings/event rows once they run against live sources.
 
 from __future__ import annotations
 
+import math
+import random
 from datetime import date, datetime, timedelta, timezone
 
 from .db import Base, SessionLocal, engine
@@ -16,6 +18,7 @@ from .models import (
     Earnings,
     Event,
     MacroSeries,
+    PriceDaily,
 )
 
 UNIVERSE = [
@@ -117,6 +120,11 @@ UNIVERSE = [
     },
 ]
 
+BENCHMARKS = [
+    {"ticker": "XLY", "name": "Consumer Discretionary Select Sector SPDR", "segment": "Sector ETF"},
+    {"ticker": "SPY", "name": "SPDR S&P 500 ETF Trust",                   "segment": "Index ETF"},
+]
+
 
 SIGNALS = {
     "CMG":  dict(last_price=58.42,  change_1d_pct=1.84, change_5d_pct=3.12,  change_30d_pct=8.44,   rs_vs_xly=5.2,  next_er=("2026-04-23", "AMC"), news=47, news_pct=138, sent=0.22,  sv_z=2.1,  jobs=4.2,   hyp=("BEAT", 0.31)),
@@ -152,6 +160,44 @@ MACRO_ROWS = [
     ("UNRATE",    "Unemployment",             0.2,  "+0.2pt", "up",   3),
     ("DGS10",     "10Y Treasury",             0.24, "+24bp",  "up",   6),
 ]
+
+
+def _seed_prices(s, by_ticker: dict[str, Company]) -> None:
+    """Generate a deterministic 90-day walk per company aligned with the seeded
+    change_30d_pct, so the chart terminates at ~last_price with a plausible path."""
+    end = date(2026, 4, 22)
+    for ticker, company in by_ticker.items():
+        sig = SIGNALS.get(ticker)
+        if sig is None:
+            continue
+        last = sig["last_price"]
+        change_30d = sig["change_30d_pct"] / 100.0
+        # start_price: solve so that last = start * (1 + change_30d) ~ 30d back,
+        # but we plot 90d so synthesize a longer baseline
+        change_90d = change_30d * 2.2  # slight amplification
+        start = last / (1 + change_90d)
+        rng = random.Random(hash(ticker) & 0xFFFFFFFF)
+
+        price = start
+        for i in range(91):
+            d = end - timedelta(days=90 - i)
+            # trend component + small daily noise
+            trend = (last - start) / 90
+            noise = rng.gauss(0, last * 0.008)
+            price = max(1.0, price + trend + noise)
+            # anchor the last observation to the seeded last_price
+            if i == 90:
+                price = last
+            existing = s.get(PriceDaily, (company.company_id, d))
+            if existing is None:
+                existing = PriceDaily(company_id=company.company_id, trade_date=d)
+                s.add(existing)
+            existing.open = round(price * (1 + rng.gauss(0, 0.002)), 2)
+            existing.high = round(price * (1 + abs(rng.gauss(0, 0.004))), 2)
+            existing.low = round(price * (1 - abs(rng.gauss(0, 0.004))), 2)
+            existing.close = round(price, 2)
+            existing.adj_close = existing.close
+            existing.volume = int(rng.uniform(500_000, 6_000_000))
 
 
 def _events_fixture(today: datetime, company_ids: dict[str, int]) -> list[Event]:
@@ -239,12 +285,25 @@ def run() -> None:
         for row in UNIVERSE:
             c = s.query(Company).filter_by(ticker=row["ticker"]).one_or_none()
             if c is None:
-                c = Company(**row)
+                c = Company(**row, is_benchmark=False)
                 s.add(c)
             else:
                 for k, v in row.items():
                     setattr(c, k, v)
+                c.is_benchmark = False
             by_ticker[row["ticker"]] = c
+
+        # --- benchmarks (XLY, SPY) — tracked via yfinance, hidden from the universe endpoint
+        for row in BENCHMARKS:
+            c = s.query(Company).filter_by(ticker=row["ticker"]).one_or_none()
+            if c is None:
+                c = Company(**row, is_benchmark=True)
+                s.add(c)
+            else:
+                for k, v in row.items():
+                    setattr(c, k, v)
+                c.is_benchmark = True
+
         s.flush()
 
         # --- signals per company
@@ -270,6 +329,11 @@ def run() -> None:
             rec.hypothesis_label = sig["hyp"][0]
             rec.hypothesis_score = sig["hyp"][1]
             s.merge(rec)
+
+        # --- synthetic 90-day price history for each company
+        # Gives the Company page chart something to render when yfinance can't reach
+        # the internet. yfinance ingest overwrites these rows once it can fetch real data.
+        _seed_prices(s, by_ticker)
 
         # --- upcoming earnings
         s.query(Earnings).delete()
