@@ -242,3 +242,49 @@ def test_date_range_open_bounds(client):
     assert r2.status_code == 200
     for row in r2.json():
         assert row["report_date"] <= "2025-12-31"
+
+
+# ---------- feature attribution + postmortem ----------
+
+
+def test_hypotheses_have_top_drivers(client):
+    body = client.get("/api/hypotheses").json()
+    with_drivers = [r for r in body["rows"] if r.get("top_drivers")]
+    assert len(with_drivers) >= 1
+    driver = with_drivers[0]["top_drivers"][0]
+    for key in ("feature", "value", "coefficient", "contribution"):
+        assert key in driver
+    assert abs(driver["contribution"] - driver["value"] * driver["coefficient"]) < 0.05
+
+
+def test_attribution_endpoint(client):
+    hypo = client.get("/api/hypotheses").json()
+    target = next(r for r in hypo["rows"] if r.get("top_drivers"))
+    earn_rows = client.get(
+        f"/api/earnings?ticker={target['ticker']}&past_only=true"
+    ).json()
+    match = next(e for e in earn_rows if e["report_date"] == target["report_date"])
+    r = client.get(f"/api/analysis/attribution/{match['earnings_id']}")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == target["ticker"]
+    assert body["target"] == "eps_surprise_pct"
+    assert len(body["contributions"]) >= 1
+
+
+def test_postmortem_endpoint(client):
+    earn_rows = client.get("/api/earnings?ticker=CMG&past_only=true").json()
+    q4 = next(e for e in earn_rows if e["fiscal_period"] == "Q4 2025")
+    r = client.get(f"/api/earnings/{q4['earnings_id']}/postmortem")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert "beat" in body["headline"].lower()
+    assert len(body["narrative"]) > 100
+
+
+def test_postmortem_404(client):
+    earn_rows = client.get("/api/earnings?ticker=SBUX").json()
+    upcoming = next(e for e in earn_rows if e["fiscal_period"] == "Q2 2026")
+    r = client.get(f"/api/earnings/{upcoming['earnings_id']}/postmortem")
+    assert r.status_code == 404

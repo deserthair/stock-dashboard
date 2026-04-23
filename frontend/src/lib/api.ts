@@ -4,6 +4,7 @@ import type {
   CompanyDetail,
   CompanyPriceHistory,
   CorrelationOut,
+  EarningsPostmortemOut,
   EarningsRow,
   EventAttributionResponse,
   EventOut,
@@ -168,6 +169,12 @@ export const api = {
   attribution: (earningsId: number, target = "eps_surprise_pct") =>
     get<EventAttributionResponse>(
       `/api/analysis/attribution/${earningsId}?target=${encodeURIComponent(target)}`,
+      600,
+    ),
+
+  postmortem: (earningsId: number) =>
+    get<EarningsPostmortemOut>(
+      `/api/earnings/${earningsId}/postmortem`,
       600,
     ),
 

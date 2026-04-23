@@ -275,6 +275,19 @@ class EventAttributionResponse(BaseModel):
     contributions: list[FeatureContribution]
 
 
+class EarningsPostmortemOut(BaseModel):
+    earnings_id: int
+    ticker: str
+    report_date: date
+    fiscal_period: str | None
+    generated_at: datetime
+    model: str
+    token_count: int
+    headline: str
+    narrative: str
+    tags: list[str]
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int

@@ -9,6 +9,7 @@ import { EarningsHistory } from "@/components/company/EarningsHistory";
 import { FilingsList } from "@/components/company/FilingsList";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
+import { PostmortemCard } from "@/components/company/PostmortemCard";
 import { PriceChart } from "@/components/company/PriceChart";
 import { SocialList } from "@/components/company/SocialList";
 import { Tabs } from "@/components/company/Tabs";
@@ -52,6 +53,15 @@ export default async function CompanyPage({
   } catch {
     notFound();
   }
+
+  // Fetch postmortems for every past event (many will 404 — that's fine).
+  const postmortems = (
+    await Promise.all(
+      earnings.map((e) =>
+        api.postmortem(e.earnings_id).catch(() => null),
+      ),
+    )
+  ).filter((x): x is NonNullable<typeof x> => x !== null);
 
   const s = company.signals;
   const up = (s.change_1d_pct ?? 0) >= 0;
@@ -170,7 +180,22 @@ export default async function CompanyPage({
       <Tabs
         tabs={[
           { id: "overview", label: "Overview", content: overviewTab },
-          { id: "earnings", label: `Earnings History (${earnings.length})`, content: <EarningsHistory rows={earnings} /> },
+          {
+            id: "earnings",
+            label: `Earnings History (${earnings.length})`,
+            content: (
+              <div className="space-y-3">
+                {postmortems.length > 0 && (
+                  <div className="space-y-3">
+                    {postmortems.map((pm) => (
+                      <PostmortemCard key={pm.earnings_id} pm={pm} />
+                    ))}
+                  </div>
+                )}
+                <EarningsHistory rows={earnings} />
+              </div>
+            ),
+          },
           { id: "news",     label: `News (${news.length})`,     content: <NewsList items={news} /> },
           { id: "social",   label: `Social (${social.length})`, content: <SocialList items={social} /> },
           { id: "filings",  label: `Filings (${filings.length})`, content: <FilingsList items={filings} /> },

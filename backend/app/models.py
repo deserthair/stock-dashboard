@@ -355,3 +355,23 @@ class Briefing(Base):
     generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, default=0)
     sections: Mapped[list] = mapped_column(JSON)
+
+
+class EarningsPostmortem(Base):
+    """Narrative explanation of a past earnings event.
+
+    One row per earnings event (keyed by earnings_id). Regenerating an
+    existing row replaces the old narrative; the event's raw features and
+    outcome remain on the earnings + features_earnings tables."""
+
+    __tablename__ = "earnings_postmortems"
+
+    earnings_id: Mapped[int] = mapped_column(
+        ForeignKey("earnings.earnings_id"), primary_key=True
+    )
+    generated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    model: Mapped[str] = mapped_column(String(64))
+    token_count: Mapped[int] = mapped_column(Integer, default=0)
+    headline: Mapped[str] = mapped_column(String(256))
+    narrative: Mapped[str] = mapped_column(Text)
+    tags: Mapped[list] = mapped_column(JSON, default=list)

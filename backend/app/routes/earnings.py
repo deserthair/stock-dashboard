@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from analysis.outcomes import compute as compute_outcome
 
+from fastapi import HTTPException
+
 from ..db import get_db
-from ..models import Company, CompanySignal, Earnings
-from ..schemas import EarningsRow, UpcomingEarnings
+from ..models import Company, CompanySignal, Earnings, EarningsPostmortem
+from ..schemas import EarningsPostmortemOut, EarningsRow, UpcomingEarnings
 from ._filters import apply_date_range
 
 router = APIRouter(prefix="/api/earnings", tags=["earnings"])
@@ -125,3 +127,39 @@ def list_earnings(
             )
         )
     return out
+
+
+@router.get("/{earnings_id}/postmortem", response_model=EarningsPostmortemOut)
+def get_postmortem(
+    earnings_id: int, db: Session = Depends(get_db)
+) -> EarningsPostmortemOut:
+    pm = db.get(EarningsPostmortem, earnings_id)
+    if pm is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No postmortem for this earnings event yet. "
+                "Run `python -m normalize.postmortem` with ANTHROPIC_API_KEY set."
+            ),
+        )
+    row = (
+        db.query(Earnings, Company)
+        .join(Company, Company.company_id == Earnings.company_id)
+        .filter(Earnings.earnings_id == earnings_id)
+        .one_or_none()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Unknown earnings_id {earnings_id}")
+    earn, company = row
+    return EarningsPostmortemOut(
+        earnings_id=pm.earnings_id,
+        ticker=company.ticker,
+        report_date=earn.report_date,
+        fiscal_period=earn.fiscal_period,
+        generated_at=pm.generated_at,
+        model=pm.model,
+        token_count=pm.token_count,
+        headline=pm.headline,
+        narrative=pm.narrative,
+        tags=list(pm.tags or []),
+    )

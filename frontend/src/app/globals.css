@@ -95,7 +95,8 @@ a {
   color: var(--accent);
   font-weight: 600;
 }
-.briefing-prose .tag {
+.briefing-prose .tag,
+.briefing-prose .postmortem-tag {
   display: inline-block;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;

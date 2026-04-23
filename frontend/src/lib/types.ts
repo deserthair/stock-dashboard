@@ -40,6 +40,7 @@ export type RegressionFitOut = S["RegressionFitOut"];
 export type AnalysisAxesResponse = S["AnalysisAxesResponse"];
 export type FeatureContribution = S["FeatureContribution"];
 export type EventAttributionResponse = S["EventAttributionResponse"];
+export type EarningsPostmortemOut = S["EarningsPostmortemOut"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

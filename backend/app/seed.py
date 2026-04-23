@@ -17,6 +17,7 @@ from .models import (
     CompanySignal,
     Earnings,
     EarningsFeature,
+    EarningsPostmortem,
     Event,
     MacroSeries,
     PriceDaily,
@@ -496,6 +497,8 @@ def run() -> None:
             )
         )
 
+        # --- demo postmortems (text seeded so UI has something without a Claude key)
+        _seed_demo_postmortems(s, by_ticker)
         s.commit()
 
     # Run a one-shot correlation pass now that features exist so the
@@ -507,6 +510,105 @@ def run() -> None:
     except Exception as exc:  # noqa: BLE001 - seed is best-effort
         print(f"[seed] correlation pass failed: {exc}")
     print("Seed complete.")
+
+
+DEMO_POSTMORTEMS = [
+    # (ticker, fiscal_period, headline, narrative, tags)
+    (
+        "CMG",
+        "Q4 2025",
+        "CMG beat on elevated news volume but faced post-print profit-taking on beef costs",
+        (
+            "<p><tag>CMG</tag> delivered EPS of <strong>$0.49 vs $0.45 estimate</strong> "
+            "(+8.9% surprise). News volume over the 30d prior ran <strong>46 items</strong>, "
+            "well above the baseline, with sentiment holding <strong>+0.013</strong>. Lasso "
+            "attribution pins almost the entire prediction to news_volume_30d (+18.5), "
+            "consistent with protein-bowl menu coverage lifting the print.</p>"
+            "<p>Market reaction was muted at <strong>+0.3% 1D</strong> despite the beat — "
+            "beef cost pressure (live cattle +8.4% 90d) capped margin expectations heading "
+            "into the next quarter, and options positioning suggested elevated expectations "
+            "were already priced in.</p>"
+        ),
+        ["earnings_beat", "menu_innovation", "beef_costs", "priced_in"],
+    ),
+    (
+        "SBUX",
+        "Q1 2026",
+        "SBUX missed on traffic softness; stock sold off on weak pricing commentary",
+        (
+            "<p><tag>SBUX</tag> reported EPS of <strong>$0.71 vs $0.79 estimate</strong> "
+            "(−10.1% surprise). News sentiment in the prior 30 days ran decisively "
+            "negative (<strong>−0.167</strong>) and a Reuters leak on pricing strategy "
+            "five days before the print telegraphed the soft topline.</p>"
+            "<p>Shares fell <strong>−10.1% 1D</strong>, the sharpest reaction in the "
+            "universe, with the drawdown deepening through the week as analyst notes "
+            "flagged declining transactions. Unusual corporate-engineering job posting "
+            "spikes prior to the print now read as infra cost buildout timed against a "
+            "weakening demand environment.</p>"
+        ),
+        ["earnings_miss", "traffic_soft", "pricing_leak", "guidance_cut"],
+    ),
+    (
+        "CAVA",
+        "Q4 2025",
+        "CAVA beat decisively on new unit economics; stock rallied on guidance raise",
+        (
+            "<p><tag>CAVA</tag> posted EPS of <strong>$0.15 vs $0.12 estimate</strong> "
+            "(+25% surprise) on revenue of $286M. The 30d news sentiment of "
+            "<strong>+0.41</strong> and +1.8σ social volume reflected genuine menu and "
+            "unit-economics traction, not just hype.</p>"
+            "<p>The stock rallied <strong>+3.1% 1D</strong> with the move extending "
+            "through the week. Chicken cost relief (−3.1% 90d) helped margins, and the "
+            "CEO's first X thread in 3 weeks pre-print telegraphed confidence. "
+            "Corporate-job postings up +12.4% also suggested management was leaning "
+            "into growth investment rather than cost discipline.</p>"
+        ),
+        ["earnings_beat", "unit_economics", "menu_innovation", "chicken_tailwind"],
+    ),
+    (
+        "TXRH",
+        "Q4 2025",
+        "TXRH missed narrowly; muted reaction as beef cost headwinds were well-telegraphed",
+        (
+            "<p><tag>TXRH</tag> came in at <strong>$1.48 vs $1.52 estimate</strong> "
+            "(−2.6% surprise) — the weakest print in the beef-heavy casual-dining cohort. "
+            "Negative news sentiment (−0.14) and relative weakness vs XLY (−6.8 over 30d) "
+            "signaled the soft print in advance.</p>"
+            "<p>Market reaction was a modest <strong>−1.1% 1D</strong>, well short of "
+            "the SBUX-scale downside, because beef cost pressure (+8.4% 90d) was already "
+            "in the cost structure everyone modeled. Jobs postings trended down, "
+            "consistent with the chain tightening the belt rather than scaling.</p>"
+        ),
+        ["earnings_miss", "beef_costs", "casual_dining", "priced_in"],
+    ),
+]
+
+
+def _seed_demo_postmortems(s, by_ticker: dict) -> None:
+    s.query(EarningsPostmortem).delete()
+    for ticker, period, headline, narrative, tags in DEMO_POSTMORTEMS:
+        company = by_ticker.get(ticker)
+        if company is None:
+            continue
+        earn = (
+            s.query(Earnings)
+            .filter_by(company_id=company.company_id, fiscal_period=period)
+            .order_by(Earnings.report_date.desc())
+            .first()
+        )
+        if earn is None:
+            continue
+        s.add(
+            EarningsPostmortem(
+                earnings_id=earn.earnings_id,
+                generated_at=datetime.utcnow(),
+                model="seed:demo",
+                token_count=len(narrative) // 4,
+                headline=headline,
+                narrative=narrative,
+                tags=tags,
+            )
+        )
 
 
 if __name__ == "__main__":

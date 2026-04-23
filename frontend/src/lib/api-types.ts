@@ -109,6 +109,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/earnings/{earnings_id}/postmortem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Postmortem */
+        get: operations["get_postmortem_api_earnings__earnings_id__postmortem_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/macro": {
         parameters: {
             query?: never;
@@ -537,6 +554,35 @@ export interface components {
             p_value: number | null;
             /** P Adjusted */
             p_adjusted: number | null;
+        };
+        /** EarningsPostmortemOut */
+        EarningsPostmortemOut: {
+            /** Earnings Id */
+            earnings_id: number;
+            /** Ticker */
+            ticker: string;
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            /** Fiscal Period */
+            fiscal_period: string | null;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Model */
+            model: string;
+            /** Token Count */
+            token_count: number;
+            /** Headline */
+            headline: string;
+            /** Narrative */
+            narrative: string;
+            /** Tags */
+            tags: string[];
         };
         /** EarningsRow */
         EarningsRow: {
@@ -1232,6 +1278,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EarningsRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_postmortem_api_earnings__earnings_id__postmortem_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                earnings_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarningsPostmortemOut"];
                 };
             };
             /** @description Validation Error */

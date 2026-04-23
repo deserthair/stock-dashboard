@@ -51,6 +51,7 @@ from ingest.sources import (
 from normalize import briefing as norm_briefing
 from normalize import events as norm_events
 from normalize import hypothesis as norm_hypothesis
+from normalize import postmortem as norm_postmortem
 from normalize import sentiment as norm_sentiment
 from normalize import signals as norm_signals
 
@@ -80,6 +81,9 @@ JOBS = [
     # Briefing is expensive (Sonnet) — run at 6am ET pre-market and once more mid-day.
     (norm_briefing.run_once,   "briefing_am",  {"trigger": "cron", "hour": 10}),
     (norm_briefing.run_once,   "briefing_pm",  {"trigger": "cron", "hour": 18}),
+    # Postmortems run once a day after morning reports are in. Idempotent —
+    # only generates narratives for earnings events that don't yet have one.
+    (norm_postmortem.run_once, "postmortem",   {"trigger": "cron", "hour": 14}),
 
     (features_engineer.run_once, "features",   {"trigger": "cron", "hour": 8}),
     (analysis_corr.run_once,   "correlations", {"trigger": "cron", "hour": 8, "minute": 30}),
