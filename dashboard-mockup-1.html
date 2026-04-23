@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RESTIN // Restaurant Intelligence Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --bg-panel: #111318;
+    --bg-panel-2: #161922;
+    --border: #232834;
+    --border-hot: #2e3446;
+    --text: #d4d7de;
+    --text-dim: #737a88;
+    --text-faint: #4a4f5c;
+    --accent: #d4ff3f;
+    --green: #3fd97b;
+    --red: #ff5c5c;
+    --amber: #ffb547;
+    --cyan: #5cd5ff;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(212, 255, 63, 0.03) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(92, 213, 255, 0.02) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar {
+    height: 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 24px;
+    background: var(--bg-panel);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+    margin-left: 4px;
+  }
+
+  .nav {
+    display: flex;
+    gap: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .nav button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .nav button.active {
+    background: var(--bg-panel-2);
+    color: var(--accent);
+    border: 1px solid var(--border-hot);
+  }
+  .nav button:hover:not(.active) { color: var(--text); }
+
+  .clock {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .clock-item strong { color: var(--text); font-weight: 500; }
+  .pulse {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--green); }
+    50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(63, 217, 123, 0); }
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .shell { display: flex; }
+  .sidebar {
+    width: 220px;
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    background: var(--bg-panel);
+    min-height: calc(100vh - 40px);
+  }
+  .main { flex: 1; padding: 16px; min-width: 0; }
+
+  .sidebar-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 0 16px;
+    margin-bottom: 8px;
+  }
+  .sidebar-label:not(:first-child) { margin-top: 20px; }
+
+  .ticker-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    font-size: 11px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.1s;
+  }
+  .ticker-row:hover { background: var(--bg-panel-2); }
+  .ticker-row.active {
+    background: var(--bg-panel-2);
+    border-left-color: var(--accent);
+  }
+  .ticker-row .sym { font-weight: 600; width: 46px; }
+  .ticker-row .pct { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .flat { color: var(--text-dim); }
+
+  /* ---------- PANEL ---------- */
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+  .panel-hd {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel-2);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .panel-hd .title { color: var(--text); font-weight: 600; }
+  .panel-hd .meta { margin-left: auto; color: var(--text-faint); }
+  .panel-bd { padding: 12px; }
+  .panel-bd.tight { padding: 0; }
+
+  /* ---------- GRIDS ---------- */
+  .grid { display: grid; gap: 12px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-brief { grid-template-columns: 2fr 1fr; }
+  .grid-company { grid-template-columns: 2fr 1fr; }
+
+  /* ---------- STAT TILE ---------- */
+  .stat {
+    padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    position: relative;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-val {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat-delta {
+    font-size: 11px;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- TABLE ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--bg-panel-2);
+  }
+  td { color: var(--text); }
+  tr:hover td { background: var(--bg-panel-2); }
+  .td-right { text-align: right; }
+
+  /* ---------- BRIEFING MARKDOWN ---------- */
+  .briefing {
+    font-family: var(--serif);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text);
+    padding: 20px 24px;
+  }
+  .briefing h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .briefing h2:first-child { margin-top: 0; }
+  .briefing p { margin-bottom: 10px; }
+  .briefing .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--bg-panel-2);
+    color: var(--accent);
+    padding: 1px 6px;
+    border: 1px solid var(--border-hot);
+    border-radius: 2px;
+    margin-right: 4px;
+  }
+  .briefing strong { color: var(--accent); font-weight: 600; }
+
+  /* ---------- EVENT FEED ---------- */
+  .event {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 60px 70px 1fr;
+    gap: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .event:hover { background: var(--bg-panel-2); }
+  .event-time { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .event-ticker {
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .event-desc { color: var(--text); }
+  .event-desc .src { color: var(--text-faint); font-size: 10px; margin-left: 6px; }
+  .sev-hi { border-left: 2px solid var(--red); }
+  .sev-md { border-left: 2px solid var(--amber); }
+  .sev-lo { border-left: 2px solid var(--border-hot); }
+
+  /* ---------- SPARK ---------- */
+  .spark {
+    height: 28px;
+    width: 80px;
+  }
+
+  /* ---------- TIMELINE CHART ---------- */
+  .chart-wrap {
+    position: relative;
+    height: 240px;
+    background: var(--bg-panel-2);
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- PILLS ---------- */
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid var(--border-hot);
+    background: var(--bg-panel-2);
+    letter-spacing: 0.05em;
+  }
+  .pill-green { color: var(--green); border-color: rgba(63, 217, 123, 0.4); }
+  .pill-red { color: var(--red); border-color: rgba(255, 92, 92, 0.4); }
+  .pill-amber { color: var(--amber); border-color: rgba(255, 181, 71, 0.4); }
+  .pill-cyan { color: var(--cyan); border-color: rgba(92, 213, 255, 0.4); }
+
+  /* ---------- HYPOTHESIS BOX ---------- */
+  .hypothesis {
+    background: linear-gradient(135deg, rgba(212, 255, 63, 0.04) 0%, transparent 60%);
+    border: 1px solid var(--border-hot);
+    border-left: 3px solid var(--accent);
+    padding: 14px 16px;
+  }
+  .hypothesis-label {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .hypothesis-body {
+    font-family: var(--serif);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .hypothesis-signals {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- FEATURE BARS ---------- */
+  .feat-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 60px;
+    gap: 10px;
+    align-items: center;
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+  .feat-row:hover { background: var(--bg-panel-2); }
+  .feat-name { color: var(--text-dim); }
+  .feat-bar-track {
+    height: 4px;
+    background: var(--bg-panel-2);
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-bar-fill {
+    position: absolute;
+    top: 0;
+    height: 100%;
+  }
+  .feat-bar-fill.pos { left: 50%; background: var(--green); }
+  .feat-bar-fill.neg { right: 50%; background: var(--red); }
+  .feat-center {
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: var(--border-hot);
+  }
+  .feat-val { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---------- VIEW SWITCHING ---------- */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- SECTION HEADER ---------- */
+  .section-hd {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-hd h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+  }
+  .section-hd .sub {
+    color: var(--text-faint);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .section-hd .right {
+    margin-left: auto;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  /* ---------- COMPANY HEADER ---------- */
+  .co-hd {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 24px;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .co-ticker {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .co-name { font-size: 14px; font-weight: 500; }
+  .co-meta { color: var(--text-faint); font-size: 11px; margin-top: 4px; letter-spacing: 0.05em; }
+  .co-price {
+    text-align: right;
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .co-price-sub { font-family: var(--mono); font-size: 12px; }
+
+  /* ---------- TAB STRIP ---------- */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+    gap: 0;
+  }
+  .tab {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ---------- NEWS LIST ---------- */
+  .news-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .news-item:hover { background: var(--bg-panel-2); }
+  .news-item .hdr {
+    display: flex;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .news-item .hdr .sent { margin-left: auto; }
+  .news-item .headline {
+    font-size: 13px;
+    font-family: var(--serif);
+    line-height: 1.4;
+  }
+
+  /* ---------- SCROLLBAR ---------- */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-hot); border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  /* ---------- UTILITY ---------- */
+  .dim { color: var(--text-dim); }
+  .faint { color: var(--text-faint); }
+  .accent { color: var(--accent); }
+  .mb-sm { margin-bottom: 6px; }
+  .mb-md { margin-bottom: 12px; }
+  .serif { font-family: var(--serif); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <span class="logo">RESTIN</span><span class="logo-sub">// RESTAURANT INTEL TERMINAL</span>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" data-view="briefing">Briefing</button>
+    <button class="nav-btn" data-view="company">Company</button>
+    <button class="nav-btn">Earnings</button>
+    <button class="nav-btn">Correlations</button>
+    <button class="nav-btn">Macro</button>
+    <button class="nav-btn">Hypotheses</button>
+  </div>
+  <div class="clock">
+    <div class="clock-item"><span class="pulse"></span>MKT <strong>OPEN</strong></div>
+    <div class="clock-item">NY <strong id="clock-ny">10:42:18</strong></div>
+    <div class="clock-item">INGEST <strong class="accent">OK</strong></div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Universe</div>
+    <div class="ticker-row" data-ticker="CMG">
+      <span class="sym accent">CMG</span>
+      <span class="dim">Chipotle</span>
+      <span class="pct up">+1.84%</span>
+    </div>
+    <div class="ticker-row" data-ticker="SBUX">
+      <span class="sym">SBUX</span>
+      <span class="dim">Starbucks</span>
+      <span class="pct down">-0.62%</span>
+    </div>
+    <div class="ticker-row" data-ticker="MCD">
+      <span class="sym">MCD</span>
+      <span class="dim">McDonald's</span>
+      <span class="pct up">+0.34%</span>
+    </div>
+    <div class="ticker-row" data-ticker="CAVA">
+      <span class="sym">CAVA</span>
+      <span class="dim">Cava Group</span>
+      <span class="pct up">+3.12%</span>
+    </div>
+    <div class="ticker-row" data-ticker="TXRH">
+      <span class="sym">TXRH</span>
+      <span class="dim">Tx Roadhouse</span>
+      <span class="pct down">-1.08%</span>
+    </div>
+    <div class="ticker-row" data-ticker="WING">
+      <span class="sym">WING</span>
+      <span class="dim">Wingstop</span>
+      <span class="pct up">+2.41%</span>
+    </div>
+    <div class="ticker-row" data-ticker="DPZ">
+      <span class="sym">DPZ</span>
+      <span class="dim">Domino's</span>
+      <span class="pct flat">+0.08%</span>
+    </div>
+    <div class="ticker-row" data-ticker="QSR">
+      <span class="sym">QSR</span>
+      <span class="dim">Rest. Brands</span>
+      <span class="pct down">-0.44%</span>
+    </div>
+
+    <div class="sidebar-label">Watch</div>
+    <div class="ticker-row">
+      <span class="sym">XLY</span>
+      <span class="dim">Cons Disc</span>
+      <span class="pct up">+0.52%</span>
+    </div>
+    <div class="ticker-row">
+      <span class="sym">SPY</span>
+      <span class="dim">S&amp;P 500</span>
+      <span class="pct up">+0.21%</span>
+    </div>
+
+    <div class="sidebar-label">Macro</div>
+    <div class="ticker-row">
+      <span class="sym">BEEF</span>
+      <span class="dim">Live Cattle</span>
+      <span class="pct up">+0.84%</span>
+    </div>
+    <div class="ticker-row">
+      <span class="sym">GAS</span>
+      <span class="dim">Retail Gas</span>
+      <span class="pct down">-0.33%</span>
+    </div>
+    <div class="ticker-row">
+      <span class="sym">10Y</span>
+      <span class="dim">Treasury</span>
+      <span class="pct up">+3bp</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- ============ BRIEFING VIEW ============ -->
+    <div class="view active" id="view-briefing">
+
+      <div class="section-hd">
+        <h1>Morning Briefing</h1>
+        <span class="sub">Apr 22, 2026 · Pre-Market</span>
+        <span class="right">Next refresh <span class="accent">09:15 ET</span></span>
+      </div>
+
+      <!-- Top stat row -->
+      <div class="grid grid-4 mb-md">
+        <div class="stat">
+          <div class="stat-label">Universe Δ 1D</div>
+          <div class="stat-val up">+0.68%</div>
+          <div class="stat-delta dim">vs SPY +0.21% · 5/8 up</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Events · 24h</div>
+          <div class="stat-val">14</div>
+          <div class="stat-delta"><span class="up">3 HI</span> · <span class="amber">5 MD</span> · <span class="dim">6 LO</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Earnings · 14D</div>
+          <div class="stat-val">3</div>
+          <div class="stat-delta dim">CMG 04/23 · SBUX 04/29 · MCD 05/01</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Signal Strength</div>
+          <div class="stat-val accent">0.64</div>
+          <div class="stat-delta dim">4 features active · median r=0.31</div>
+        </div>
+      </div>
+
+      <div class="grid grid-brief mb-md">
+
+        <!-- AI-drafted briefing -->
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="title">Overnight Synthesis</span>
+            <span class="meta">CLAUDE · 847 TOKENS · 06:02 ET</span>
+          </div>
+          <div class="briefing">
+            <h2>Top Story</h2>
+            <p><span class="tag">CMG</span> Chipotle reports after close tomorrow. News volume over the past 7 days runs <strong>+138% above 30-day baseline</strong>, driven largely by coverage of the new protein bowl menu tests in LA and Denver markets. Sentiment trend is <strong>mildly positive (+0.22)</strong> but analyst commentary on Reddit skews cautious, flagging traffic softness in earlier Q1 credit card data.</p>
+
+            <h2>Macro Context</h2>
+            <p>Live cattle futures up <strong>+8.4% over 90 days</strong>, sustained pressure on beef-heavy concepts (<span class="tag">TXRH</span>, <span class="tag">MCD</span>, <span class="tag">CMG</span>). Chicken wholesale prices <strong>down 3.1%</strong> over same window — tailwind for <span class="tag">WING</span>, <span class="tag">CAVA</span>. Consumer sentiment ticked up 1.2 pts to 74.8 in the latest UMich release but remains below 2024 avg.</p>
+
+            <h2>Hypothesis Watch</h2>
+            <p><span class="tag">CMG</span> Pre-earnings composite signal <strong>+0.31</strong> leaning bullish; 7 of 9 features align positive. Risk: news volume spike often precedes miss-and-sell when sentiment trend decelerates in final 5 days (current trajectory: flat-to-down). Track closely.</p>
+
+            <h2>Flags</h2>
+            <p><span class="tag">SBUX</span> Unusual job posting delta — <strong>corporate engineering roles +42% WoW</strong>, possible platform/ordering infra rebuild. Historical: +28% in 2023 preceded mobile order redesign. <span class="tag">CAVA</span> CEO posted first X thread in 3 weeks; themes around unit economics. Monitoring.</p>
+          </div>
+        </div>
+
+        <!-- Event feed -->
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="title">Live Event Feed</span>
+            <span class="meta">AUTO · 5min</span>
+          </div>
+          <div class="panel-bd tight">
+            <div class="event sev-hi">
+              <span class="event-time">06:14</span>
+              <span class="event-ticker accent">CMG</span>
+              <div class="event-desc">8-K filed · Item 7.01 Reg FD · investor day confirmed May 9<span class="src">EDGAR</span></div>
+            </div>
+            <div class="event sev-md">
+              <span class="event-time">05:52</span>
+              <span class="event-ticker">SBUX</span>
+              <div class="event-desc">News spike — Reuters on pricing strategy leak<span class="src">GOOGLE RSS</span></div>
+            </div>
+            <div class="event sev-md">
+              <span class="event-time">03:21</span>
+              <span class="event-ticker">WING</span>
+              <div class="event-desc">Careers page +18 roles overnight (mostly Intl Dev)<span class="src">SCRAPE</span></div>
+            </div>
+            <div class="event sev-lo">
+              <span class="event-time">02:08</span>
+              <span class="event-ticker">MCD</span>
+              <div class="event-desc">Reddit thread r/stocks — value meal discussion (214 upvotes)<span class="src">PRAW</span></div>
+            </div>
+            <div class="event sev-lo">
+              <span class="event-time">01:42</span>
+              <span class="event-ticker">TXRH</span>
+              <div class="event-desc">IG post — new bourbon bar concept Austin<span class="src">EMAIL</span></div>
+            </div>
+            <div class="event sev-md">
+              <span class="event-time">00:15</span>
+              <span class="event-ticker">CAVA</span>
+              <div class="event-desc">CEO X thread on unit economics (7 tweets)<span class="src">EMAIL</span></div>
+            </div>
+            <div class="event sev-lo">
+              <span class="event-time">Yd 22:40</span>
+              <span class="event-ticker">QSR</span>
+              <div class="event-desc">Seeking Alpha article — Popeyes intl rollout<span class="src">EMAIL</span></div>
+            </div>
+            <div class="event sev-hi">
+              <span class="event-time">Yd 21:12</span>
+              <span class="event-ticker accent">FRED</span>
+              <div class="event-desc">Macro shock — cattle futures +2.1% daily move (&gt;2σ)<span class="src">FRED</span></div>
+            </div>
+            <div class="event sev-lo">
+              <span class="event-time">Yd 19:30</span>
+              <span class="event-ticker">DPZ</span>
+              <div class="event-desc">Analyst note — BofA reiterates buy, PT raise<span class="src">EMAIL</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Universe table -->
+      <div class="panel mb-md">
+        <div class="panel-hd">
+          <span class="title">Universe Matrix</span>
+          <span class="meta">LIVE · PRE-MKT 08:42 ET</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Last</th>
+              <th class="td-right">Δ 1D</th>
+              <th class="td-right">Δ 5D</th>
+              <th class="td-right">Δ 30D</th>
+              <th class="td-right">RS vs XLY</th>
+              <th>Next ER</th>
+              <th class="td-right">News 7D</th>
+              <th class="td-right">Sent 7D</th>
+              <th class="td-right">Social Vol Z</th>
+              <th class="td-right">Jobs Δ 30D</th>
+              <th class="td-right">Hypothesis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent"><strong>CMG</strong></td>
+              <td>58.42</td>
+              <td class="td-right up">+1.84%</td>
+              <td class="td-right up">+3.12%</td>
+              <td class="td-right up">+8.44%</td>
+              <td class="td-right up">+5.2</td>
+              <td>04/23 AMC</td>
+              <td class="td-right">47 <span class="pill pill-amber">+138%</span></td>
+              <td class="td-right up">+0.22</td>
+              <td class="td-right">+2.1σ</td>
+              <td class="td-right up">+4.2%</td>
+              <td class="td-right"><span class="pill pill-green">BEAT +0.31</span></td>
+            </tr>
+            <tr>
+              <td><strong>SBUX</strong></td>
+              <td>84.11</td>
+              <td class="td-right down">-0.62%</td>
+              <td class="td-right down">-1.80%</td>
+              <td class="td-right down">-4.22%</td>
+              <td class="td-right down">-3.1</td>
+              <td>04/29 AMC</td>
+              <td class="td-right">22</td>
+              <td class="td-right down">-0.08</td>
+              <td class="td-right flat">+0.4σ</td>
+              <td class="td-right up">+8.1%</td>
+              <td class="td-right"><span class="pill pill-amber">MIXED -0.05</span></td>
+            </tr>
+            <tr>
+              <td><strong>MCD</strong></td>
+              <td>291.58</td>
+              <td class="td-right up">+0.34%</td>
+              <td class="td-right up">+1.22%</td>
+              <td class="td-right up">+2.84%</td>
+              <td class="td-right flat">+0.8</td>
+              <td>05/01 BMO</td>
+              <td class="td-right">31</td>
+              <td class="td-right up">+0.12</td>
+              <td class="td-right flat">-0.2σ</td>
+              <td class="td-right flat">+0.4%</td>
+              <td class="td-right"><span class="pill pill-amber">MIXED +0.08</span></td>
+            </tr>
+            <tr>
+              <td><strong>CAVA</strong></td>
+              <td>112.80</td>
+              <td class="td-right up">+3.12%</td>
+              <td class="td-right up">+7.41%</td>
+              <td class="td-right up">+14.2%</td>
+              <td class="td-right up">+11.0</td>
+              <td>05/15 AMC</td>
+              <td class="td-right">18</td>
+              <td class="td-right up">+0.41</td>
+              <td class="td-right">+1.8σ</td>
+              <td class="td-right up">+12.4%</td>
+              <td class="td-right"><span class="pill pill-green">BEAT +0.44</span></td>
+            </tr>
+            <tr>
+              <td><strong>TXRH</strong></td>
+              <td>172.40</td>
+              <td class="td-right down">-1.08%</td>
+              <td class="td-right down">-2.41%</td>
+              <td class="td-right down">-6.11%</td>
+              <td class="td-right down">-6.8</td>
+              <td>04/25 AMC</td>
+              <td class="td-right">12</td>
+              <td class="td-right down">-0.14</td>
+              <td class="td-right flat">-0.1σ</td>
+              <td class="td-right flat">-1.2%</td>
+              <td class="td-right"><span class="pill pill-red">MISS -0.22</span></td>
+            </tr>
+            <tr>
+              <td><strong>WING</strong></td>
+              <td>324.18</td>
+              <td class="td-right up">+2.41%</td>
+              <td class="td-right up">+4.82%</td>
+              <td class="td-right up">+6.31%</td>
+              <td class="td-right up">+3.2</td>
+              <td>05/02 BMO</td>
+              <td class="td-right">14</td>
+              <td class="td-right up">+0.18</td>
+              <td class="td-right flat">+0.7σ</td>
+              <td class="td-right up">+6.8%</td>
+              <td class="td-right"><span class="pill pill-green">BEAT +0.28</span></td>
+            </tr>
+            <tr>
+              <td><strong>DPZ</strong></td>
+              <td>452.60</td>
+              <td class="td-right flat">+0.08%</td>
+              <td class="td-right flat">+0.22%</td>
+              <td class="td-right down">-1.42%</td>
+              <td class="td-right flat">-1.4</td>
+              <td>05/06 BMO</td>
+              <td class="td-right">8</td>
+              <td class="td-right flat">+0.02</td>
+              <td class="td-right flat">-0.3σ</td>
+              <td class="td-right flat">+1.1%</td>
+              <td class="td-right"><span class="pill">NO SIGNAL</span></td>
+            </tr>
+            <tr>
+              <td><strong>QSR</strong></td>
+              <td>68.92</td>
+              <td class="td-right down">-0.44%</td>
+              <td class="td-right down">-0.91%</td>
+              <td class="td-right down">-2.88%</td>
+              <td class="td-right down">-2.2</td>
+              <td>05/08 BMO</td>
+              <td class="td-right">11</td>
+              <td class="td-right flat">-0.04</td>
+              <td class="td-right flat">-0.4σ</td>
+              <td class="td-right up">+3.2%</td>
+              <td class="td-right"><span class="pill pill-amber">MIXED -0.11</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom grid: macro + upcoming -->
+      <div class="grid grid-2">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="title">Macro Signals · 90D</span>
+            <span class="meta">FRED</span>
+          </div>
+          <div class="panel-bd tight">
+            <div class="feat-row">
+              <span class="feat-name">Live Cattle (PBEEF)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 21%;"></span>
+              </div>
+              <span class="feat-val up">+8.4%</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Chicken (WPU0211)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill neg" style="width: 8%;"></span>
+              </div>
+              <span class="feat-val down">-3.1%</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Wheat (PWHEAMT)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 5%;"></span>
+              </div>
+              <span class="feat-val up">+2.1%</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Retail Gas (GASREGW)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill neg" style="width: 12%;"></span>
+              </div>
+              <span class="feat-val down">-4.8%</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Cons Sent (UMCSENT)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 4%;"></span>
+              </div>
+              <span class="feat-val up">+1.6</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Food Wages (CES707)</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 9%;"></span>
+              </div>
+              <span class="feat-val up">+3.4%</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">Unemployment</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 3%;"></span>
+              </div>
+              <span class="feat-val up">+0.2pt</span>
+            </div>
+            <div class="feat-row">
+              <span class="feat-name">10Y Treasury</span>
+              <div class="feat-bar-track">
+                <span class="feat-center"></span>
+                <span class="feat-bar-fill pos" style="width: 6%;"></span>
+              </div>
+              <span class="feat-val up">+24bp</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="title">Upcoming Earnings · Next 21D</span>
+            <span class="meta">FINNHUB</span>
+          </div>
+          <div class="panel-bd tight">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Ticker</th>
+                  <th>Period</th>
+                  <th class="td-right">EPS Est</th>
+                  <th class="td-right">Rev Est</th>
+                  <th class="td-right">Hyp</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>04/23 AMC</td>
+                  <td class="accent"><strong>CMG</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">0.52</td>
+                  <td class="td-right">2.91B</td>
+                  <td class="td-right"><span class="pill pill-green">+0.31</span></td>
+                </tr>
+                <tr>
+                  <td>04/25 AMC</td>
+                  <td><strong>TXRH</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">1.84</td>
+                  <td class="td-right">1.42B</td>
+                  <td class="td-right"><span class="pill pill-red">-0.22</span></td>
+                </tr>
+                <tr>
+                  <td>04/29 AMC</td>
+                  <td><strong>SBUX</strong></td>
+                  <td>Q2 2026</td>
+                  <td class="td-right">0.81</td>
+                  <td class="td-right">9.12B</td>
+                  <td class="td-right"><span class="pill pill-amber">-0.05</span></td>
+                </tr>
+                <tr>
+                  <td>05/01 BMO</td>
+                  <td><strong>MCD</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">2.72</td>
+                  <td class="td-right">6.18B</td>
+                  <td class="td-right"><span class="pill pill-amber">+0.08</span></td>
+                </tr>
+                <tr>
+                  <td>05/02 BMO</td>
+                  <td><strong>WING</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">0.94</td>
+                  <td class="td-right">162M</td>
+                  <td class="td-right"><span class="pill pill-green">+0.28</span></td>
+                </tr>
+                <tr>
+                  <td>05/06 BMO</td>
+                  <td><strong>DPZ</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">4.12</td>
+                  <td class="td-right">1.48B</td>
+                  <td class="td-right"><span class="pill">—</span></td>
+                </tr>
+                <tr>
+                  <td>05/08 BMO</td>
+                  <td><strong>QSR</strong></td>
+                  <td>Q1 2026</td>
+                  <td class="td-right">0.78</td>
+                  <td class="td-right">1.88B</td>
+                  <td class="td-right"><span class="pill pill-amber">-0.11</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /briefing -->
+
+
+    <!-- ============ COMPANY VIEW ============ -->
+    <div class="view" id="view-company">
+
+      <div class="co-hd">
+        <div>
+          <div class="co-ticker">CMG</div>
+        </div>
+        <div>
+          <div class="co-name">Chipotle Mexican Grill, Inc.</div>
+          <div class="co-meta">FAST CASUAL · NYSE · MKT CAP $78.4B · NEXT ER APR 23 AMC · ANALYST COV 34</div>
+        </div>
+        <div>
+          <div class="co-price up">58.42</div>
+          <div class="co-price-sub up">+1.06 (+1.84%)</div>
+        </div>
+      </div>
+
+      <!-- Tab strip -->
+      <div class="tabs">
+        <button class="tab active">Overview</button>
+        <button class="tab">News</button>
+        <button class="tab">Social</button>
+        <button class="tab">Filings</button>
+        <button class="tab">Jobs</button>
+        <button class="tab">Earnings History</button>
+        <button class="tab">Features</button>
+      </div>
+
+      <!-- Hypothesis -->
+      <div class="hypothesis mb-md">
+        <div class="hypothesis-label">◆ Pre-Earnings Hypothesis · Q1 2026 · Report Apr 23 AMC</div>
+        <div class="hypothesis-body">
+          Composite signal <strong class="accent">+0.31</strong> leans <strong class="accent">bullish</strong> into print. Positive contribution from elevated news volume (+138% vs 30d baseline), rising consumer sentiment, and strong 30-day relative strength vs XLY. Counter-signals: decelerating sentiment in final 5 days and sustained beef cost pressure (+8.4% / 90d). <span class="dim">Model base rate for beat at this signal level: <strong>68%</strong>. Historic reaction for beats at composite ≥ +0.25: +2.1% 1D return.</span>
+        </div>
+        <div class="hypothesis-signals">
+          <span class="pill pill-green">news_vol_z +2.1σ</span>
+          <span class="pill pill-green">rs_30d +5.2</span>
+          <span class="pill pill-green">cons_sent Δ +1.6</span>
+          <span class="pill pill-green">social_sent +0.22</span>
+          <span class="pill pill-red">beef +8.4%</span>
+          <span class="pill pill-amber">sent_trend flat</span>
+        </div>
+      </div>
+
+      <!-- Grid: chart + sidebar -->
+      <div class="grid grid-company mb-md">
+
+        <!-- LEFT: chart + table -->
+        <div>
+          <div class="panel mb-md">
+            <div class="panel-hd">
+              <span class="title">Price · Events · 90D</span>
+              <span class="meta">INTRADAY · YFINANCE</span>
+            </div>
+            <div class="chart-wrap">
+              <svg viewBox="0 0 800 240" width="100%" height="100%" preserveAspectRatio="none">
+                <!-- Grid -->
+                <line x1="0" y1="60" x2="800" y2="60" stroke="#232834" stroke-dasharray="2,4"/>
+                <line x1="0" y1="120" x2="800" y2="120" stroke="#232834" stroke-dasharray="2,4"/>
+                <line x1="0" y1="180" x2="800" y2="180" stroke="#232834" stroke-dasharray="2,4"/>
+
+                <!-- Price line -->
+                <path d="M 0,180 L 40,170 L 80,165 L 120,175 L 160,160 L 200,155 L 240,140 L 280,135 L 320,145 L 360,130 L 400,120 L 440,115 L 480,125 L 520,110 L 560,105 L 600,95 L 640,85 L 680,92 L 720,78 L 760,70 L 800,65"
+                      fill="none" stroke="#d4ff3f" stroke-width="1.5"/>
+
+                <!-- Fill under line -->
+                <path d="M 0,180 L 40,170 L 80,165 L 120,175 L 160,160 L 200,155 L 240,140 L 280,135 L 320,145 L 360,130 L 400,120 L 440,115 L 480,125 L 520,110 L 560,105 L 600,95 L 640,85 L 680,92 L 720,78 L 760,70 L 800,65 L 800,240 L 0,240 Z"
+                      fill="url(#grad1)" opacity="0.3"/>
+                <defs>
+                  <linearGradient id="grad1" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#d4ff3f" stop-opacity="0.4"/>
+                    <stop offset="100%" stop-color="#d4ff3f" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Event markers -->
+                <circle cx="180" cy="155" r="4" fill="#ff5c5c" stroke="#0a0b0d" stroke-width="1.5"/>
+                <circle cx="380" cy="128" r="4" fill="#ffb547" stroke="#0a0b0d" stroke-width="1.5"/>
+                <circle cx="560" cy="105" r="4" fill="#ff5c5c" stroke="#0a0b0d" stroke-width="1.5"/>
+                <circle cx="720" cy="78" r="4" fill="#5cd5ff" stroke="#0a0b0d" stroke-width="1.5"/>
+                <circle cx="790" cy="68" r="5" fill="#d4ff3f" stroke="#0a0b0d" stroke-width="1.5"/>
+
+                <!-- Y labels -->
+                <text x="6" y="58" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">62.00</text>
+                <text x="6" y="118" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">58.00</text>
+                <text x="6" y="178" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">54.00</text>
+
+                <!-- X labels -->
+                <text x="40" y="232" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">JAN 23</text>
+                <text x="280" y="232" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">FEB 20</text>
+                <text x="520" y="232" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">MAR 20</text>
+                <text x="740" y="232" fill="#4a4f5c" font-family="JetBrains Mono" font-size="9">APR 22</text>
+              </svg>
+            </div>
+            <div style="padding: 8px 12px; font-size: 10px; color: var(--text-faint); border-top: 1px solid var(--border); display: flex; gap: 16px;">
+              <span><span style="color:#ff5c5c">●</span> 8-K / Filing</span>
+              <span><span style="color:#ffb547">●</span> News Spike</span>
+              <span><span style="color:#5cd5ff">●</span> Social Spike</span>
+              <span><span style="color:#d4ff3f">●</span> Earnings</span>
+            </div>
+          </div>
+
+          <!-- News -->
+          <div class="panel mb-md">
+            <div class="panel-hd">
+              <span class="title">News Feed</span>
+              <span class="meta">47 · 7D</span>
+            </div>
+            <div class="panel-bd tight">
+              <div class="news-item">
+                <div class="hdr">
+                  <span>06:14 ET</span>
+                  <span class="accent">REUTERS</span>
+                  <span class="sent up">SENT +0.42</span>
+                </div>
+                <div class="headline">Chipotle confirms May 9 investor day, expected to detail international rollout framework</div>
+              </div>
+              <div class="news-item">
+                <div class="hdr">
+                  <span>Yd 18:22</span>
+                  <span>BLOOMBERG</span>
+                  <span class="sent up">SENT +0.28</span>
+                </div>
+                <div class="headline">Protein bowl pilot expands to Denver; early comp data reportedly positive per sources</div>
+              </div>
+              <div class="news-item">
+                <div class="hdr">
+                  <span>Yd 14:08</span>
+                  <span>CNBC</span>
+                  <span class="sent down">SENT -0.14</span>
+                </div>
+                <div class="headline">Analysts trim Q1 traffic forecasts on credit card data weakness</div>
+              </div>
+              <div class="news-item">
+                <div class="hdr">
+                  <span>Yd 09:44</span>
+                  <span>SA</span>
+                  <span class="sent up">SENT +0.18</span>
+                </div>
+                <div class="headline">Seeking Alpha · bull case update: unit expansion runway remains intact</div>
+              </div>
+              <div class="news-item">
+                <div class="hdr">
+                  <span>04/20</span>
+                  <span>IR PAGE</span>
+                  <span class="sent up">SENT +0.08</span>
+                </div>
+                <div class="headline">Press release · CMG announces expanded sustainability sourcing partnership</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Social -->
+          <div class="panel">
+            <div class="panel-hd">
+              <span class="title">Social · Official + Public</span>
+              <span class="meta">EMAIL · PRAW</span>
+            </div>
+            <div class="panel-bd tight">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Platform</th>
+                    <th>Source</th>
+                    <th>Content</th>
+                    <th class="td-right">Eng</th>
+                    <th class="td-right">Sent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Yd 15:20</td>
+                    <td><span class="pill pill-cyan">X</span></td>
+                    <td>@ChipotleTweets</td>
+                    <td class="dim">"The protein bowl just hit Denver. Try it this weekend."</td>
+                    <td class="td-right">12.4k</td>
+                    <td class="td-right up">+0.40</td>
+                  </tr>
+                  <tr>
+                    <td>Yd 11:02</td>
+                    <td><span class="pill pill-amber">RDT</span></td>
+                    <td>r/stocks</td>
+                    <td class="dim">"CMG Q1 preview — why I'm cautious going into print"</td>
+                    <td class="td-right">214 / 88c</td>
+                    <td class="td-right down">-0.28</td>
+                  </tr>
+                  <tr>
+                    <td>04/20</td>
+                    <td><span class="pill pill-cyan">X</span></td>
+                    <td>@markkalinowski</td>
+                    <td class="dim">"Channel checks on CMG mixed; avg tkt up, traffic flat"</td>
+                    <td class="td-right">842</td>
+                    <td class="td-right flat">+0.02</td>
+                  </tr>
+                  <tr>
+                    <td>04/19</td>
+                    <td><span class="pill">IG</span></td>
+                    <td>@chipotle</td>
+                    <td class="dim">Reel · behind-the-scenes kitchen operations · 2.1M views</td>
+                    <td class="td-right">2.1M</td>
+                    <td class="td-right up">+0.22</td>
+                  </tr>
+                  <tr>
+                    <td>04/18</td>
+                    <td><span class="pill pill-amber">RDT</span></td>
+                    <td>r/Chipotle</td>
+                    <td class="dim">"Portion sizes feel smaller again in my market"</td>
+                    <td class="td-right">88 / 42c</td>
+                    <td class="td-right down">-0.48</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: feature vector + filings + jobs -->
+        <div>
+          <div class="panel mb-md">
+            <div class="panel-hd">
+              <span class="title">Current Feature Vector</span>
+              <span class="meta">v3 · T-1D</span>
+            </div>
+            <div class="panel-bd tight">
+              <div class="feat-row">
+                <span class="feat-name">return_30d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 22%;"></span>
+                </div>
+                <span class="feat-val up">+8.4%</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">volatility_30d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill neg" style="width: 10%;"></span>
+                </div>
+                <span class="feat-val down">-12%</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">rs_vs_xly_30d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 14%;"></span>
+                </div>
+                <span class="feat-val up">+5.2</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">news_vol_z</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 28%;"></span>
+                </div>
+                <span class="feat-val up">+2.1σ</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">news_sent_mean_30d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 11%;"></span>
+                </div>
+                <span class="feat-val up">+0.22</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">news_sent_trend_5d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 2%;"></span>
+                </div>
+                <span class="feat-val flat">+0.01</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">social_sent_mean</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 9%;"></span>
+                </div>
+                <span class="feat-val up">+0.18</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">jobs_corp_Δ_90d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 16%;"></span>
+                </div>
+                <span class="feat-val up">+4.2%</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">filings_8k_30d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 6%;"></span>
+                </div>
+                <span class="feat-val">3</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">beef_Δ_90d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 21%;"></span>
+                </div>
+                <span class="feat-val up">+8.4%</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">cons_sent_level</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 8%;"></span>
+                </div>
+                <span class="feat-val up">74.8</span>
+              </div>
+              <div class="feat-row">
+                <span class="feat-name">unemp_Δ_90d</span>
+                <div class="feat-bar-track">
+                  <span class="feat-center"></span>
+                  <span class="feat-bar-fill pos" style="width: 3%;"></span>
+                </div>
+                <span class="feat-val up">+0.2pt</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel mb-md">
+            <div class="panel-hd">
+              <span class="title">Recent Filings</span>
+              <span class="meta">EDGAR</span>
+            </div>
+            <div class="panel-bd tight">
+              <div class="event sev-hi">
+                <span class="event-time">04/22</span>
+                <span class="event-ticker">8-K</span>
+                <div class="event-desc">Item 7.01 · Investor day schedule<span class="src">View</span></div>
+              </div>
+              <div class="event sev-lo">
+                <span class="event-time">03/14</span>
+                <span class="event-ticker">10-Q</span>
+                <div class="event-desc">Q4 2025 quarterly report<span class="src">View</span></div>
+              </div>
+              <div class="event sev-md">
+                <span class="event-time">02/28</span>
+                <span class="event-ticker">8-K</span>
+                <div class="event-desc">Item 2.02 · Q4 2025 results<span class="src">View</span></div>
+              </div>
+              <div class="event sev-lo">
+                <span class="event-time">02/12</span>
+                <span class="event-ticker">DEF</span>
+                <div class="event-desc">Proxy statement<span class="src">View</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <span class="title">Hiring Snapshot</span>
+              <span class="meta">WEEKLY SCRAPE</span>
+            </div>
+            <div class="panel-bd">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <div class="stat-label">Total Openings</div>
+                  <div class="serif" style="font-size: 24px; font-weight: 500;">1,842</div>
+                  <div class="up" style="font-size: 11px;">+4.2% vs 90D avg</div>
+                </div>
+                <div>
+                  <div class="stat-label">Corporate</div>
+                  <div class="serif" style="font-size: 24px; font-weight: 500;">127</div>
+                  <div class="up" style="font-size: 11px;">+12% WoW</div>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Dept</th>
+                    <th class="td-right">Count</th>
+                    <th class="td-right">Δ 30D</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>Restaurant Ops</td><td class="td-right">1,412</td><td class="td-right flat">+1.1%</td></tr>
+                  <tr><td>Field Leadership</td><td class="td-right">184</td><td class="td-right up">+8.4%</td></tr>
+                  <tr><td>Tech / Digital</td><td class="td-right">62</td><td class="td-right up">+22%</td></tr>
+                  <tr><td>Marketing</td><td class="td-right">28</td><td class="td-right flat">0.0%</td></tr>
+                  <tr><td>Supply Chain</td><td class="td-right">34</td><td class="td-right down">-6.0%</td></tr>
+                  <tr><td>Real Estate</td><td class="td-right">22</td><td class="td-right up">+18%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /company -->
+
+  </main>
+</div>
+
+<script>
+  // ---- clock ----
+  function tick() {
+    const d = new Date();
+    const ny = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour12: false,
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).format(d);
+    document.getElementById('clock-ny').textContent = ny;
+  }
+  setInterval(tick, 1000); tick();
+
+  // ---- view switching ----
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      if (!view) return;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + view).classList.add('active');
+      window.scrollTo(0, 0);
+    });
+  });
+
+  // ---- ticker click → company view ----
+  document.querySelectorAll('.ticker-row[data-ticker]').forEach(row => {
+    row.addEventListener('click', () => {
+      document.querySelectorAll('.ticker-row').forEach(r => r.classList.remove('active'));
+      row.classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.nav-btn[data-view="company"]').classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-company').classList.add('active');
+      window.scrollTo(0, 0);
+    });
+  });
+</script>
+
+</body>
+</html>
