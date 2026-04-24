@@ -17,6 +17,7 @@ from .routes import (
     news,
     ops,
     options,
+    simulate,
     social,
     trends,
     universe,
@@ -64,4 +65,5 @@ app.include_router(hypotheses.router)
 app.include_router(trends.router)
 app.include_router(commodities.router)
 app.include_router(options.router)
+app.include_router(simulate.router)
 app.include_router(ops.router)

@@ -517,6 +517,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulate/price-paths/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Price Path Simulation */
+        get: operations["price_path_simulation_api_simulate_price_paths__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/simulate/earnings-bootstrap/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Earnings Reaction Bootstrap */
+        get: operations["earnings_reaction_bootstrap_api_simulate_earnings_bootstrap__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/source-runs": {
         parameters: {
             query?: never;
@@ -544,6 +578,23 @@ export interface components {
             features: string[];
             /** Targets */
             targets: string[];
+        };
+        /** BootstrapQuantilesOut */
+        BootstrapQuantilesOut: {
+            /** P05 */
+            p05: number;
+            /** P25 */
+            p25: number;
+            /** P50 */
+            p50: number;
+            /** P75 */
+            p75: number;
+            /** P95 */
+            p95: number;
+            /** Mean */
+            mean: number;
+            /** Stdev */
+            stdev: number;
         };
         /** BriefingOut */
         BriefingOut: {
@@ -723,6 +774,36 @@ export interface components {
             p_value: number | null;
             /** P Adjusted */
             p_adjusted: number | null;
+        };
+        /** EarningsBootstrapOut */
+        EarningsBootstrapOut: {
+            /** Target Ticker */
+            target_ticker: string;
+            /** Target Hypothesis Score */
+            target_hypothesis_score: number | null;
+            /** Target Fiscal Period */
+            target_fiscal_period: string | null;
+            /** Method */
+            method: string;
+            /** Score Tolerance */
+            score_tolerance: number | null;
+            /** N Peers */
+            n_peers: number;
+            /** N Bootstrap */
+            n_bootstrap: number;
+            /** Peers */
+            peers: components["schemas"]["PeerEventOut"][];
+            /** Histogram */
+            histogram: components["schemas"]["HistogramBinOut"][];
+            quantiles: components["schemas"]["BootstrapQuantilesOut"];
+            /** Prob Positive Return */
+            prob_positive_return: number;
+            /** Prob Up 2Pct */
+            prob_up_2pct: number;
+            /** Prob Down 2Pct */
+            prob_down_2pct: number;
+            /** Notes */
+            notes: string[];
         };
         /** EarningsPostmortemOut */
         EarningsPostmortemOut: {
@@ -940,6 +1021,15 @@ export interface components {
             /** Sample Sizes */
             sample_sizes: number[][];
         };
+        /** HistogramBinOut */
+        HistogramBinOut: {
+            /** Low */
+            low: number;
+            /** High */
+            high: number;
+            /** Count */
+            count: number;
+        };
         /** HypothesisTrackerRow */
         HypothesisTrackerRow: {
             /** Ticker */
@@ -1112,6 +1202,26 @@ export interface components {
             /** History */
             history: components["schemas"]["OptionsSnapshotOut"][];
         };
+        /** PeerEventOut */
+        PeerEventOut: {
+            /** Earnings Id */
+            earnings_id: number;
+            /** Ticker */
+            ticker: string;
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            /** Fiscal Period */
+            fiscal_period: string | null;
+            /** Hypothesis Score */
+            hypothesis_score: number | null;
+            /** Actual 1D Return */
+            actual_1d_return: number | null;
+            /** Eps Surprise Pct */
+            eps_surprise_pct: number | null;
+        };
         /** PriceBar */
         PriceBar: {
             /**
@@ -1129,6 +1239,43 @@ export interface components {
             close: number | null;
             /** Volume */
             volume: number | null;
+        };
+        /** PricePathSimulationOut */
+        PricePathSimulationOut: {
+            /** Ticker */
+            ticker: string;
+            /** Model */
+            model: string;
+            /** Start Price */
+            start_price: number;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /** Horizon Days */
+            horizon_days: number;
+            /** N Paths */
+            n_paths: number;
+            /** Annual Drift Pct */
+            annual_drift_pct: number;
+            /** Annual Volatility Pct */
+            annual_volatility_pct: number;
+            /** Fit Window Days */
+            fit_window_days: number;
+            /** Fit Observations */
+            fit_observations: number;
+            /** Bands */
+            bands: components["schemas"]["QuantileBandOut"][];
+            /** Terminal Histogram */
+            terminal_histogram: components["schemas"]["HistogramBinOut"][];
+            terminal_stats: components["schemas"]["TerminalStatsOut"];
+            /** Earnings Dates In Window */
+            earnings_dates_in_window: string[];
+            /** Jump Sigma At Earnings */
+            jump_sigma_at_earnings: number | null;
+            /** Notes */
+            notes: string[];
         };
         /** QualityMetricsOut */
         QualityMetricsOut: {
@@ -1172,6 +1319,26 @@ export interface components {
             quarters_available: number;
             /** Years Of History */
             years_of_history: number;
+        };
+        /** QuantileBandOut */
+        QuantileBandOut: {
+            /** Day Offset */
+            day_offset: number;
+            /**
+             * Obs Date
+             * Format: date
+             */
+            obs_date: string;
+            /** P05 */
+            p05: number;
+            /** P25 */
+            p25: number;
+            /** P50 */
+            p50: number;
+            /** P75 */
+            p75: number;
+            /** P95 */
+            p95: number;
         };
         /** RedditPostOut */
         RedditPostOut: {
@@ -1341,6 +1508,27 @@ export interface components {
             features_active: number;
             /** Median R */
             median_r: number;
+        };
+        /** TerminalStatsOut */
+        TerminalStatsOut: {
+            /** Expected Value */
+            expected_value: number;
+            /** P05 */
+            p05: number;
+            /** P25 */
+            p25: number;
+            /** P50 */
+            p50: number;
+            /** P75 */
+            p75: number;
+            /** P95 */
+            p95: number;
+            /** Prob Positive Return */
+            prob_positive_return: number;
+            /** Prob Down 10Pct */
+            prob_down_10pct: number;
+            /** Prob Up 10Pct */
+            prob_up_10pct: number;
         };
         /** TrendsObservationOut */
         TrendsObservationOut: {
@@ -2375,6 +2563,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OptionsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    price_path_simulation_api_simulate_price_paths__ticker__get: {
+        parameters: {
+            query?: {
+                horizon_days?: number;
+                n_paths?: number;
+                model?: string;
+                fit_window_days?: number;
+                seed?: number | null;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricePathSimulationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    earnings_reaction_bootstrap_api_simulate_earnings_bootstrap__ticker__get: {
+        parameters: {
+            query?: {
+                fiscal_period?: string | null;
+                n_bootstrap?: number;
+                tolerance?: number;
+                seed?: number | null;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarningsBootstrapOut"];
                 };
             };
             /** @description Validation Error */

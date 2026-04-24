@@ -53,6 +53,13 @@ export type CommodityPricePoint = S["CommodityPricePoint"];
 export type CommodityDetail = S["CommodityDetail"];
 export type OptionsSnapshotOut = S["OptionsSnapshotOut"];
 export type OptionsSummary = S["OptionsSummary"];
+export type QuantileBandOut = S["QuantileBandOut"];
+export type HistogramBinOut = S["HistogramBinOut"];
+export type TerminalStatsOut = S["TerminalStatsOut"];
+export type PricePathSimulationOut = S["PricePathSimulationOut"];
+export type PeerEventOut = S["PeerEventOut"];
+export type BootstrapQuantilesOut = S["BootstrapQuantilesOut"];
+export type EarningsBootstrapOut = S["EarningsBootstrapOut"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

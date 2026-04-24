@@ -428,6 +428,93 @@ class OptionsSummary(BaseModel):
     history: list[OptionsSnapshotOut]
 
 
+# ---------- simulation ----------
+
+
+class QuantileBandOut(BaseModel):
+    day_offset: int
+    obs_date: date
+    p05: float
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+
+
+class HistogramBinOut(BaseModel):
+    low: float
+    high: float
+    count: int
+
+
+class TerminalStatsOut(BaseModel):
+    expected_value: float
+    p05: float
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+    prob_positive_return: float
+    prob_down_10pct: float
+    prob_up_10pct: float
+
+
+class PricePathSimulationOut(BaseModel):
+    ticker: str
+    model: str
+    start_price: float
+    start_date: date
+    horizon_days: int
+    n_paths: int
+    annual_drift_pct: float
+    annual_volatility_pct: float
+    fit_window_days: int
+    fit_observations: int
+    bands: list[QuantileBandOut]
+    terminal_histogram: list[HistogramBinOut]
+    terminal_stats: TerminalStatsOut
+    earnings_dates_in_window: list[date]
+    jump_sigma_at_earnings: float | None
+    notes: list[str]
+
+
+class PeerEventOut(BaseModel):
+    earnings_id: int
+    ticker: str
+    report_date: date
+    fiscal_period: str | None
+    hypothesis_score: float | None
+    actual_1d_return: float | None
+    eps_surprise_pct: float | None
+
+
+class BootstrapQuantilesOut(BaseModel):
+    p05: float
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+    mean: float
+    stdev: float
+
+
+class EarningsBootstrapOut(BaseModel):
+    target_ticker: str
+    target_hypothesis_score: float | None
+    target_fiscal_period: str | None
+    method: str
+    score_tolerance: float | None
+    n_peers: int
+    n_bootstrap: int
+    peers: list[PeerEventOut]
+    histogram: list[HistogramBinOut]
+    quantiles: BootstrapQuantilesOut
+    prob_positive_return: float
+    prob_up_2pct: float
+    prob_down_2pct: float
+    notes: list[str]
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int

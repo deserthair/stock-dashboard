@@ -431,3 +431,72 @@ def test_options_summary(client):
 def test_options_unknown_ticker(client):
     r = client.get("/api/options/ZZZ")
     assert r.status_code == 404
+
+
+# ---------- simulation ----------
+
+
+def test_price_paths_gbm_shape(client):
+    r = client.get("/api/simulate/price-paths/CMG?horizon_days=30&n_paths=2000&seed=42")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert body["model"] == "gbm"
+    assert body["horizon_days"] == 30
+    assert body["n_paths"] == 2000
+    assert len(body["bands"]) == 30
+    # Bands are monotonic p05 ≤ p25 ≤ p50 ≤ p75 ≤ p95 for every day
+    for band in body["bands"]:
+        assert band["p05"] <= band["p25"] <= band["p50"] <= band["p75"] <= band["p95"]
+    t = body["terminal_stats"]
+    assert 0.0 <= t["prob_positive_return"] <= 1.0
+    assert 0.0 <= t["prob_up_10pct"] <= 1.0
+    assert 0.0 <= t["prob_down_10pct"] <= 1.0
+
+
+def test_price_paths_merton_picks_up_earnings(client):
+    # CMG has an upcoming earnings report within 30d of the seed anchor
+    r = client.get(
+        "/api/simulate/price-paths/CMG?horizon_days=45&n_paths=2000&model=merton&seed=7"
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["model"] == "merton"
+
+
+def test_price_paths_reproducible_with_seed(client):
+    a = client.get(
+        "/api/simulate/price-paths/CMG?horizon_days=30&n_paths=2000&seed=123"
+    ).json()
+    b = client.get(
+        "/api/simulate/price-paths/CMG?horizon_days=30&n_paths=2000&seed=123"
+    ).json()
+    assert a["terminal_stats"]["p50"] == b["terminal_stats"]["p50"]
+
+
+def test_price_paths_bad_model_400(client):
+    r = client.get("/api/simulate/price-paths/CMG?model=bogus")
+    assert r.status_code == 422  # FastAPI validates the enum pattern
+
+
+def test_price_paths_unknown_ticker_400(client):
+    r = client.get("/api/simulate/price-paths/ZZZ")
+    assert r.status_code == 400
+
+
+def test_earnings_bootstrap_shape(client):
+    r = client.get("/api/simulate/earnings-bootstrap/CMG?n_bootstrap=1000&seed=42")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["target_ticker"] == "CMG"
+    assert body["n_bootstrap"] == 1000
+    assert len(body["histogram"]) == 40
+    q = body["quantiles"]
+    assert q["p05"] <= q["p25"] <= q["p50"] <= q["p75"] <= q["p95"]
+    assert body["method"] in ("score_window", "same_sign", "all_events")
+    assert 0.0 <= body["prob_positive_return"] <= 1.0
+
+
+def test_earnings_bootstrap_unknown_ticker_400(client):
+    r = client.get("/api/simulate/earnings-bootstrap/ZZZ")
+    assert r.status_code == 400

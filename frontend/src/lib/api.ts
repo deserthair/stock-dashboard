@@ -7,6 +7,7 @@ import type {
   CompanyFundamentals,
   CompanyPriceHistory,
   CorrelationOut,
+  EarningsBootstrapOut,
   EarningsPostmortemOut,
   EarningsRow,
   EventAttributionResponse,
@@ -19,6 +20,7 @@ import type {
   MacroSeriesDetail,
   NewsItemOut,
   OptionsSummary,
+  PricePathSimulationOut,
   RedditPostOut,
   RegressionFitOut,
   ScatterResponse,
@@ -92,6 +94,50 @@ export const api = {
       `/api/options/${ticker.toUpperCase()}?limit=${limit}`,
       300,
     ),
+
+  simulatePricePaths: (
+    ticker: string,
+    params: {
+      horizon_days?: number;
+      n_paths?: number;
+      model?: "gbm" | "merton";
+      fit_window_days?: number;
+      seed?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.horizon_days) qs.set("horizon_days", String(params.horizon_days));
+    if (params.n_paths) qs.set("n_paths", String(params.n_paths));
+    if (params.model) qs.set("model", params.model);
+    if (params.fit_window_days) qs.set("fit_window_days", String(params.fit_window_days));
+    if (params.seed !== undefined) qs.set("seed", String(params.seed));
+    const s = qs.toString();
+    return get<PricePathSimulationOut>(
+      `/api/simulate/price-paths/${ticker.toUpperCase()}${s ? `?${s}` : ""}`,
+      60,
+    );
+  },
+
+  simulateEarningsBootstrap: (
+    ticker: string,
+    params: {
+      fiscal_period?: string;
+      n_bootstrap?: number;
+      tolerance?: number;
+      seed?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.fiscal_period) qs.set("fiscal_period", params.fiscal_period);
+    if (params.n_bootstrap) qs.set("n_bootstrap", String(params.n_bootstrap));
+    if (params.tolerance !== undefined) qs.set("tolerance", String(params.tolerance));
+    if (params.seed !== undefined) qs.set("seed", String(params.seed));
+    const s = qs.toString();
+    return get<EarningsBootstrapOut>(
+      `/api/simulate/earnings-bootstrap/${ticker.toUpperCase()}${s ? `?${s}` : ""}`,
+      300,
+    );
+  },
 
   news: (ticker?: string, limit = 50, range?: DateRange) =>
     get<NewsItemOut[]>(

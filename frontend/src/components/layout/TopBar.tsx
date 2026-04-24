@@ -9,6 +9,7 @@ const NAV = [
   { href: "/company/CMG", label: "Company" },
   { href: "/earnings", label: "Earnings" },
   { href: "/correlations", label: "Correlations" },
+  { href: "/simulate", label: "Simulate" },
   { href: "/macro", label: "Macro" },
   { href: "/commodities", label: "Commodities" },
   { href: "/trends", label: "Trends" },
