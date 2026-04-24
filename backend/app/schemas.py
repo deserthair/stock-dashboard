@@ -116,6 +116,8 @@ class BriefingResponse(BaseModel):
 class NewsItemOut(BaseModel):
     news_id: int
     ticker: str | None
+    institution_id: int | None = None
+    institution_name: str | None = None
     source: str
     url: str
     published_at: datetime | None

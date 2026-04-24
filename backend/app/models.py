@@ -130,10 +130,23 @@ class MacroObservation(Base):
 
 
 class NewsItem(Base):
+    """An ingested news item.
+
+    At most one of company_id / institution_id is expected to be set per
+    row — the worker always fetches for a single subject. If an article
+    legitimately mentions both, it'll be indexed under both via separate
+    rows with distinct url_hashes (one per query, since Google News
+    returns different URLs depending on query context)."""
+
     __tablename__ = "news"
 
     news_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.company_id"))
+    company_id: Mapped[int | None] = mapped_column(
+        ForeignKey("companies.company_id"), index=True
+    )
+    institution_id: Mapped[int | None] = mapped_column(
+        ForeignKey("institutions.institution_id"), index=True
+    )
     source: Mapped[str] = mapped_column(String(32))  # google_rss / pr_page / email_alert
     url: Mapped[str] = mapped_column(String(512))
     url_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
@@ -287,6 +300,10 @@ class Institution(Base):
     x_handle: Mapped[str | None] = mapped_column(String(64))
     cik: Mapped[str | None] = mapped_column(String(16))
     aum_usd: Mapped[float | None] = mapped_column(Float)
+    # Override the Google-News query used by the news worker. Defaults to
+    # "name" when null. Useful for activists where including the principal
+    # ("Bill Ackman", "Warren Buffett") boosts signal dramatically.
+    news_query: Mapped[str | None] = mapped_column(String(256))
 
 
 class InstitutionalHolding(Base):

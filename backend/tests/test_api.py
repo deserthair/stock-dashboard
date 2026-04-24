@@ -624,3 +624,43 @@ def test_universe_holdings_cmg_ackman_stake(client):
     )
     assert pershing["institution"]["kind"] == "activist"
     assert (pershing["pct_change"] or 0) > 0
+
+
+# ---------- institution news ----------
+
+
+def test_news_institution_filter(client):
+    r = client.get("/api/news?institution=Pershing+Square+Capital")
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) >= 3
+    for item in items:
+        assert item["institution_name"] == "Pershing Square Capital"
+        assert item["ticker"] is None
+
+
+def test_news_unknown_institution_404(client):
+    r = client.get("/api/news?institution=Some+Fake+Fund")
+    assert r.status_code == 404
+
+
+def test_news_holders_of_ticker(client):
+    r = client.get("/api/news?holders_of=CMG&limit=40")
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) >= 5
+    assert all(item["institution_id"] is not None for item in items)
+    assert any(item["institution_name"] == "Pershing Square Capital" for item in items)
+
+
+def test_news_holders_of_unknown_ticker_404(client):
+    r = client.get("/api/news?holders_of=ZZZ")
+    assert r.status_code == 404
+
+
+def test_news_ticker_still_works(client):
+    # Regression: company-tagged news filter still serializes correctly with
+    # the new institution fields in the schema.
+    r = client.get("/api/news?ticker=CMG")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)

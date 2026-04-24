@@ -26,6 +26,7 @@ from .models import (
     Institution,
     InstitutionalHolding,
     MacroSeries,
+    NewsItem,
     OptionsSnapshot,
     PriceDaily,
     TrendsObservation,
@@ -939,19 +940,21 @@ def _seed_demo_options(s, by_ticker: dict) -> None:
 
 
 INSTITUTIONS_SEED = [
-    # (name, kind, website, x_handle, aum_usd)
-    ("Vanguard Group",              "index_fund",  "https://about.vanguard.com",       "vanguard_group", 8_600_000_000_000),
-    ("BlackRock Inc.",              "index_fund",  "https://www.blackrock.com",        "BlackRock",      10_000_000_000_000),
-    ("State Street Global Advisors","index_fund",  "https://www.ssga.com",             "StateStreet",     4_100_000_000_000),
-    ("Fidelity Management & Research","institution","https://www.fidelity.com",        "Fidelity",        4_900_000_000_000),
-    ("T. Rowe Price Associates",    "institution","https://www.troweprice.com",        "TRowePrice",      1_500_000_000_000),
-    ("Capital Research & Management","institution","https://www.capitalgroup.com",     "Capital_Group",   2_700_000_000_000),
-    ("Geode Capital Management",    "index_fund",  "https://www.geodecapital.com",     None,              1_200_000_000_000),
-    ("Pershing Square Capital",     "activist",    "https://pershingsquareholdings.com","BillAckman",        18_000_000_000),
-    ("Berkshire Hathaway",          "hedge_fund",  "https://www.berkshirehathaway.com",None,                860_000_000_000),
-    ("Wellington Management",       "institution","https://www.wellington.com",        None,              1_400_000_000_000),
-    ("Norges Bank Investment Mgmt", "institution","https://www.nbim.no",               "NBIM",            1_700_000_000_000),
-    ("Morgan Stanley Investment Mgmt","institution","https://www.morganstanley.com",   None,                1_500_000_000_000),
+    # (name, kind, website, x_handle, aum_usd, news_query)
+    # news_query for activists/hedge funds includes the principal to boost
+    # Google News relevance. None → worker falls back to `name`.
+    ("Vanguard Group",              "index_fund",  "https://about.vanguard.com",       "vanguard_group",  8_600_000_000_000, "Vanguard Group"),
+    ("BlackRock Inc.",              "index_fund",  "https://www.blackrock.com",        "BlackRock",      10_000_000_000_000, "BlackRock"),
+    ("State Street Global Advisors","index_fund",  "https://www.ssga.com",             "StateStreet",     4_100_000_000_000, "State Street SSGA"),
+    ("Fidelity Management & Research","institution","https://www.fidelity.com",        "Fidelity",        4_900_000_000_000, "Fidelity Management"),
+    ("T. Rowe Price Associates",    "institution","https://www.troweprice.com",        "TRowePrice",      1_500_000_000_000, "T. Rowe Price"),
+    ("Capital Research & Management","institution","https://www.capitalgroup.com",     "Capital_Group",   2_700_000_000_000, "Capital Group"),
+    ("Geode Capital Management",    "index_fund",  "https://www.geodecapital.com",     None,              1_200_000_000_000, "Geode Capital"),
+    ("Pershing Square Capital",     "activist",    "https://pershingsquareholdings.com","BillAckman",        18_000_000_000, "Pershing Square OR \"Bill Ackman\""),
+    ("Berkshire Hathaway",          "hedge_fund",  "https://www.berkshirehathaway.com",None,                860_000_000_000, "Berkshire Hathaway OR \"Warren Buffett\""),
+    ("Wellington Management",       "institution","https://www.wellington.com",        None,              1_400_000_000_000, "Wellington Management"),
+    ("Norges Bank Investment Mgmt", "institution","https://www.nbim.no",               "NBIM",            1_700_000_000_000, "Norges Bank NBIM"),
+    ("Morgan Stanley Investment Mgmt","institution","https://www.morganstanley.com",   None,                1_500_000_000_000, "Morgan Stanley Investment Management"),
 ]
 
 # Per-ticker institutional holdings as of the seed anchor date.
@@ -1096,9 +1099,14 @@ def _seed_demo_holdings(s, by_ticker: dict) -> None:
 
     # Institutions
     inst_by_name: dict[str, Institution] = {}
-    for (name, kind, website, x_handle, aum) in INSTITUTIONS_SEED:
+    for (name, kind, website, x_handle, aum, news_query) in INSTITUTIONS_SEED:
         inst = Institution(
-            name=name, kind=kind, website=website, x_handle=x_handle, aum_usd=float(aum)
+            name=name,
+            kind=kind,
+            website=website,
+            x_handle=x_handle,
+            aum_usd=float(aum),
+            news_query=news_query,
         )
         s.add(inst)
         inst_by_name[name] = inst
@@ -1193,6 +1201,96 @@ def _seed_demo_holdings(s, by_ticker: dict) -> None:
                     is_10b5_1=is_planned and ttype == "sell",
                 )
             )
+
+    # Demo news items about each institution — survives yfinance outage
+    _seed_demo_institution_news(s, inst_by_name)
+
+
+INSTITUTION_NEWS_SEED = [
+    # (institution_name, publisher, headline, days_ago, sentiment)
+    ("Pershing Square Capital", "Reuters",
+     "Bill Ackman raises Chipotle stake to 4.8%, highest in two years",
+     2, 0.45),
+    ("Pershing Square Capital", "Bloomberg",
+     "Ackman says Chipotle's protein-bowl test validates menu-expansion thesis",
+     5, 0.32),
+    ("Pershing Square Capital", "CNBC",
+     "Pershing Square files updated 13F showing CMG accumulation",
+     8, 0.10),
+    ("Berkshire Hathaway", "WSJ",
+     "Berkshire adds to Domino's position; now 8.8% of shares outstanding",
+     3, 0.28),
+    ("Berkshire Hathaway", "Barron's",
+     "Buffett's pizza bet: why Berkshire keeps buying DPZ",
+     10, 0.22),
+    ("BlackRock Inc.", "Reuters",
+     "BlackRock Q1 flows: ETF inflows hit record $128B, passive share grows",
+     4, 0.12),
+    ("BlackRock Inc.", "Financial Times",
+     "BlackRock trims discretionary-holdings on consumer-softness call",
+     7, -0.15),
+    ("Vanguard Group", "Bloomberg",
+     "Vanguard's index funds drive ownership concentration in restaurant sector",
+     6, 0.05),
+    ("T. Rowe Price Associates", "Reuters",
+     "T. Rowe Price slashes Starbucks position on traffic concerns",
+     3, -0.38),
+    ("T. Rowe Price Associates", "Barron's",
+     "T. Rowe Price adds to Wingstop and Cava on unit-economics thesis",
+     9, 0.25),
+    ("Fidelity Management & Research", "CNBC",
+     "Fidelity growth funds boost Cava Group stake by 42%",
+     5, 0.41),
+    ("State Street Global Advisors", "Reuters",
+     "SSGA launches new consumer-discretionary ETF with restaurant tilt",
+     11, 0.08),
+    ("Capital Research & Management", "Bloomberg",
+     "Capital Group's restaurant-sector analyst calls for beef-cost peak in Q3",
+     6, 0.18),
+    ("Norges Bank Investment Mgmt", "FT",
+     "Norway's wealth fund disclosures show increased QSR exposure",
+     14, 0.05),
+    ("Wellington Management", "Reuters",
+     "Wellington rotates into Texas Roadhouse on valuation compression",
+     8, 0.16),
+]
+
+
+def _seed_demo_institution_news(s, inst_by_name: dict) -> None:
+    """Write demo Google-News-style items tagged to institutions so the
+    Holdings tab has something to render without live ingest."""
+    import hashlib as _hashlib
+    from datetime import timedelta as _td
+
+    now = datetime.utcnow()
+    for (inst_name, publisher, headline, days_ago, sentiment) in INSTITUTION_NEWS_SEED:
+        inst = inst_by_name.get(inst_name)
+        if inst is None:
+            continue
+        fetched = now - _td(days=days_ago)
+        url = f"https://news.google.com/seed/{inst.institution_id}/{_hashlib.md5(headline.encode()).hexdigest()[:10]}"
+        url_hash = _hashlib.sha256(url.encode()).hexdigest()
+        existing = s.query(NewsItem).filter_by(url_hash=url_hash).one_or_none()
+        if existing is not None:
+            continue
+        s.add(
+            NewsItem(
+                institution_id=inst.institution_id,
+                company_id=None,
+                source="google_rss",
+                url=url,
+                url_hash=url_hash,
+                published_at=fetched,
+                fetched_at=fetched,
+                headline=headline,
+                body=None,
+                publisher=publisher,
+                sentiment_score=sentiment,
+                sentiment_confidence=0.7,
+                relevance_score=0.8,
+                topics=[],
+            )
+        )
 
 
 if __name__ == "__main__":

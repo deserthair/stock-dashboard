@@ -8,6 +8,7 @@ import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { EarningsHistory } from "@/components/company/EarningsHistory";
 import { Financials } from "@/components/company/Financials";
 import { FilingsList } from "@/components/company/FilingsList";
+import { HolderNewsList } from "@/components/company/HolderNewsList";
 import { HoldingsPanel } from "@/components/company/HoldingsPanel";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
@@ -46,8 +47,9 @@ export default async function CompanyPage({
   let fundamentals;
   let optionsSummary;
   let holdings;
+  let holderNews;
   try {
-    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals, optionsSummary, holdings] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals, optionsSummary, holdings, holderNews] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30, range).catch(() => []),
@@ -59,6 +61,7 @@ export default async function CompanyPage({
       api.companyFundamentals(params.ticker).catch(() => null),
       api.optionsSummary(params.ticker).catch(() => null),
       api.companyHoldings(params.ticker).catch(() => null),
+      api.holderNewsFor(params.ticker, 40, range).catch(() => []),
     ]);
   } catch {
     notFound();
@@ -267,7 +270,10 @@ export default async function CompanyPage({
               ? `Holdings (${holdings.total_institutional_pct ?? "?"}% inst)`
               : "Holdings",
             content: holdings ? (
-              <HoldingsPanel data={holdings} />
+              <div className="space-y-3">
+                <HoldingsPanel data={holdings} />
+                <HolderNewsList items={holderNews} ticker={company.ticker} />
+              </div>
             ) : (
               <Panel title="Holdings">
                 <p className="text-[11px] text-fg-dim">

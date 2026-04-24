@@ -187,6 +187,24 @@ export const api = {
       120,
     ),
 
+  institutionNews: (institutionName: string, limit = 30, range?: DateRange) =>
+    get<NewsItemOut[]>(
+      withRange(
+        `/api/news?limit=${limit}&institution=${encodeURIComponent(institutionName)}`,
+        range,
+      ),
+      120,
+    ),
+
+  holderNewsFor: (ticker: string, limit = 40, range?: DateRange) =>
+    get<NewsItemOut[]>(
+      withRange(
+        `/api/news?limit=${limit}&holders_of=${ticker.toUpperCase()}`,
+        range,
+      ),
+      120,
+    ),
+
   social: (ticker?: string, limit = 50, range?: DateRange) =>
     get<SocialPostOut[]>(
       withRange(

@@ -1438,6 +1438,10 @@ export interface components {
             news_id: number;
             /** Ticker */
             ticker: string | null;
+            /** Institution Id */
+            institution_id?: number | null;
+            /** Institution Name */
+            institution_name?: string | null;
             /** Source */
             source: string;
             /** Url */
@@ -2329,6 +2333,11 @@ export interface operations {
         parameters: {
             query?: {
                 ticker?: string | null;
+                /** @description Filter by institution name (exact match). */
+                institution?: string | null;
+                institution_id?: number | null;
+                /** @description Ticker whose top institutional holders we want news for. Returns news items tagged with any of those institutions. */
+                holders_of?: string | null;
                 start_date?: string | null;
                 end_date?: string | null;
                 limit?: number;
