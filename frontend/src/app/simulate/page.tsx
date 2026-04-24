@@ -16,17 +16,19 @@ export default async function SimulatePage({
       ? searchParams.ticker.toUpperCase()
       : DEFAULT_TICKER;
 
-  const [universe, initialPrice, initialBootstrap, initialDCF] = await Promise.all([
-    api.universe(),
-    api.simulatePricePaths(ticker, {
-      horizon_days: DEFAULT_HORIZON,
-      n_paths: DEFAULT_PATHS,
-      model: "gbm",
-      seed: 42,
-    }),
-    api.simulateEarningsBootstrap(ticker, { seed: 42 }),
-    api.simulateDCF(ticker, { seed: 42 }).catch(() => null),
-  ]);
+  const [universe, initialPrice, initialBootstrap, initialDCF, initialBacktest] =
+    await Promise.all([
+      api.universe(),
+      api.simulatePricePaths(ticker, {
+        horizon_days: DEFAULT_HORIZON,
+        n_paths: DEFAULT_PATHS,
+        model: "gbm",
+        seed: 42,
+      }),
+      api.simulateEarningsBootstrap(ticker, { seed: 42 }),
+      api.simulateDCF(ticker, { seed: 42 }).catch(() => null),
+      api.simulateBacktest().catch(() => null),
+    ]);
 
   return (
     <Shell universe={universe} activeTicker={ticker}>
@@ -58,6 +60,7 @@ export default async function SimulatePage({
         initialPrice={initialPrice}
         initialBootstrap={initialBootstrap}
         initialDCF={initialDCF}
+        initialBacktest={initialBacktest}
       />
     </Shell>
   );

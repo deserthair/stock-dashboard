@@ -62,6 +62,9 @@ export type BootstrapQuantilesOut = S["BootstrapQuantilesOut"];
 export type EarningsBootstrapOut = S["EarningsBootstrapOut"];
 export type DCFStatsOut = S["DCFStatsOut"];
 export type DCFResultOut = S["DCFResultOut"];
+export type BacktestPredictionOut = S["BacktestPredictionOut"];
+export type BacktestModelSummaryOut = S["BacktestModelSummaryOut"];
+export type BacktestReportOut = S["BacktestReportOut"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

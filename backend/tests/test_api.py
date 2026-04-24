@@ -539,3 +539,35 @@ def test_dcf_wacc_below_terminal_growth_400(client):
         "/api/simulate/dcf/CMG?wacc_mean=0.03&wacc_std=0.002&terminal_growth=0.05&n_simulations=500"
     )
     assert r.status_code == 400
+
+
+# ---------- backtest ----------
+
+
+def test_backtest_runs(client):
+    r = client.get("/api/simulate/backtest")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["n_events_evaluated"] >= 5
+    assert body["n_events_candidates"] >= body["n_events_evaluated"]
+    assert len(body["predictions"]) >= 10
+
+
+def test_backtest_all_models_evaluated(client):
+    body = client.get("/api/simulate/backtest").json()
+    names = {m["model"] for m in body["models"]}
+    assert {"gbm_1d", "merton_1d_earnings", "bootstrap", "hypothesis_linear"}.issubset(names)
+
+
+def test_backtest_ranked_by_correlation(client):
+    body = client.get("/api/simulate/backtest").json()
+    rs = [m["correlation_r"] for m in body["models"] if m["correlation_r"] is not None]
+    assert rs == sorted(rs, reverse=True)
+
+
+def test_backtest_predictions_shape(client):
+    body = client.get("/api/simulate/backtest").json()
+    p = body["predictions"][0]
+    for key in ("model", "ticker", "report_date", "predicted", "actual"):
+        assert key in p
+    assert p["inside_90"] in (True, False, None)

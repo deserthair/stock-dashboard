@@ -99,14 +99,24 @@ def _fit_log_returns(rows: list[PriceDaily]) -> tuple[float, float, int]:
     return mu_d, sigma_d, int(log_r.size)
 
 
-def _fetch_history(s: Session, company_id: int, window_days: int) -> list[PriceDaily]:
-    cutoff = date.today() - timedelta(days=window_days * 2)  # calendar → plenty of trading days
-    return (
-        s.query(PriceDaily)
-        .filter(PriceDaily.company_id == company_id, PriceDaily.trade_date >= cutoff)
-        .order_by(PriceDaily.trade_date)
-        .all()
+def _fetch_history(
+    s: Session,
+    company_id: int,
+    window_days: int,
+    as_of: date | None = None,
+) -> list[PriceDaily]:
+    """Returns rows ordered by trade_date asc. When `as_of` is set, only
+    returns rows with trade_date ≤ as_of — required for backtesting so the
+    simulator can't peek at future prices."""
+    anchor = as_of or date.today()
+    cutoff = anchor - timedelta(days=window_days * 2)
+    q = s.query(PriceDaily).filter(
+        PriceDaily.company_id == company_id,
+        PriceDaily.trade_date >= cutoff,
     )
+    if as_of is not None:
+        q = q.filter(PriceDaily.trade_date <= as_of)
+    return q.order_by(PriceDaily.trade_date).all()
 
 
 def _scheduled_earnings(
@@ -183,6 +193,7 @@ def simulate(
     model: str = "gbm",
     fit_window_days: int = DEFAULT_FIT_WINDOW_DAYS,
     seed: int | None = None,
+    as_of: date | None = None,
 ) -> SimulationResult:
     import numpy as np
 
@@ -190,7 +201,7 @@ def simulate(
     if company is None:
         raise ValueError(f"Unknown ticker {ticker}")
 
-    history = _fetch_history(s, company.company_id, fit_window_days)
+    history = _fetch_history(s, company.company_id, fit_window_days, as_of=as_of)
     mu_d, sigma_d, n_obs = _fit_log_returns(history)
     if n_obs < MIN_FIT_OBSERVATIONS:
         raise ValueError(

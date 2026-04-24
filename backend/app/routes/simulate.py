@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from simulation import backtest as backtest_sim
 from simulation import dcf as dcf_sim
 from simulation import earnings_bootstrap, price_paths
 
 from ..db import get_db
 from ..schemas import (
+    BacktestModelSummaryOut,
+    BacktestPredictionOut,
+    BacktestReportOut,
     BootstrapQuantilesOut,
     DCFResultOut,
     DCFStatsOut,
@@ -116,6 +120,18 @@ def dcf_simulation(
         margin_of_safety_at_p50_pct=result.margin_of_safety_at_p50_pct,
         fit_quarters=result.fit_quarters,
         notes=result.notes,
+    )
+
+
+@router.get("/backtest", response_model=BacktestReportOut)
+def backtest_all(db: Session = Depends(get_db)) -> BacktestReportOut:
+    report = backtest_sim.run(db)
+    return BacktestReportOut(
+        models=[BacktestModelSummaryOut(**m.__dict__) for m in report.models],
+        predictions=[BacktestPredictionOut(**p.__dict__) for p in report.predictions],
+        n_events_evaluated=report.n_events_evaluated,
+        n_events_candidates=report.n_events_candidates,
+        notes=report.notes,
     )
 
 

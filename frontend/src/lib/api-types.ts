@@ -551,6 +551,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulate/backtest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Backtest All */
+        get: operations["backtest_all_api_simulate_backtest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulate/earnings-bootstrap/{ticker}": {
         parameters: {
             query?: never;
@@ -595,6 +612,70 @@ export interface components {
             features: string[];
             /** Targets */
             targets: string[];
+        };
+        /** BacktestModelSummaryOut */
+        BacktestModelSummaryOut: {
+            /** Model */
+            model: string;
+            /** N */
+            n: number;
+            /** Correlation R */
+            correlation_r: number | null;
+            /** Direction Accuracy */
+            direction_accuracy: number | null;
+            /** Median Abs Error */
+            median_abs_error: number | null;
+            /** Bias */
+            bias: number | null;
+            /** Coverage 50 */
+            coverage_50: number | null;
+            /** Coverage 90 */
+            coverage_90: number | null;
+        };
+        /** BacktestPredictionOut */
+        BacktestPredictionOut: {
+            /** Model */
+            model: string;
+            /** Earnings Id */
+            earnings_id: number;
+            /** Ticker */
+            ticker: string;
+            /**
+             * Report Date
+             * Format: date
+             */
+            report_date: string;
+            /** Hypothesis Score */
+            hypothesis_score: number | null;
+            /** Predicted */
+            predicted: number;
+            /** Predicted P25 */
+            predicted_p25: number | null;
+            /** Predicted P75 */
+            predicted_p75: number | null;
+            /** Predicted P05 */
+            predicted_p05: number | null;
+            /** Predicted P95 */
+            predicted_p95: number | null;
+            /** Actual */
+            actual: number;
+            /** Inside 50 */
+            inside_50: boolean | null;
+            /** Inside 90 */
+            inside_90: boolean | null;
+        };
+        /** BacktestReportOut */
+        BacktestReportOut: {
+            /** Models */
+            models: components["schemas"]["BacktestModelSummaryOut"][];
+            /** Predictions */
+            predictions: components["schemas"]["BacktestPredictionOut"][];
+            /** N Events Evaluated */
+            n_events_evaluated: number;
+            /** N Events Candidates */
+            n_events_candidates: number;
+            /** Notes */
+            notes: string[];
         };
         /** BootstrapQuantilesOut */
         BootstrapQuantilesOut: {
@@ -2723,6 +2804,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backtest_all_api_simulate_backtest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacktestReportOut"];
                 };
             };
         };

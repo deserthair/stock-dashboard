@@ -525,6 +525,41 @@ class DCFStatsOut(BaseModel):
     stdev: float
 
 
+class BacktestPredictionOut(BaseModel):
+    model: str
+    earnings_id: int
+    ticker: str
+    report_date: date
+    hypothesis_score: float | None
+    predicted: float
+    predicted_p25: float | None
+    predicted_p75: float | None
+    predicted_p05: float | None
+    predicted_p95: float | None
+    actual: float
+    inside_50: bool | None
+    inside_90: bool | None
+
+
+class BacktestModelSummaryOut(BaseModel):
+    model: str
+    n: int
+    correlation_r: float | None
+    direction_accuracy: float | None
+    median_abs_error: float | None
+    bias: float | None
+    coverage_50: float | None
+    coverage_90: float | None
+
+
+class BacktestReportOut(BaseModel):
+    models: list[BacktestModelSummaryOut]
+    predictions: list[BacktestPredictionOut]
+    n_events_evaluated: int
+    n_events_candidates: int
+    notes: list[str]
+
+
 class DCFResultOut(BaseModel):
     ticker: str
     current_price: float | None

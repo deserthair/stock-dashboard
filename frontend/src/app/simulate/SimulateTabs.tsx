@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 
+import { BacktestPanel } from "@/components/simulate/BacktestPanel";
 import { DCFPanel } from "@/components/simulate/DCFPanel";
 import { Panel } from "@/components/ui/Panel";
 import type {
+  BacktestReportOut,
   DCFResultOut,
   EarningsBootstrapOut,
   PricePathSimulationOut,
@@ -12,7 +14,7 @@ import type {
 } from "@/lib/types";
 import { SimulatePanel } from "./SimulatePanel";
 
-type TabId = "paths" | "dcf";
+type TabId = "paths" | "dcf" | "backtest";
 
 export function SimulateTabs({
   universe,
@@ -20,18 +22,28 @@ export function SimulateTabs({
   initialPrice,
   initialBootstrap,
   initialDCF,
+  initialBacktest,
 }: {
   universe: UniverseRow[];
   initialTicker: string;
   initialPrice: PricePathSimulationOut;
   initialBootstrap: EarningsBootstrapOut;
   initialDCF: DCFResultOut | null;
+  initialBacktest: BacktestReportOut | null;
 }) {
   const [active, setActive] = useState<TabId>("paths");
 
+  const bestR = initialBacktest?.models?.[0]?.correlation_r ?? null;
   const tabs: { id: TabId; label: string }[] = [
     { id: "paths", label: "Price paths + Earnings Bootstrap" },
     { id: "dcf", label: "Probabilistic DCF" },
+    {
+      id: "backtest",
+      label:
+        bestR !== null && bestR !== undefined
+          ? `Backtest (best r = ${bestR >= 0 ? "+" : ""}${bestR.toFixed(2)})`
+          : "Backtest",
+    },
   ];
 
   return (
@@ -69,6 +81,16 @@ export function SimulateTabs({
             <p className="text-[11px] text-fg-dim">
               No fundamentals ingested for {initialTicker}. Run{" "}
               <code>python -m ingest.sources.fundamentals</code> first.
+            </p>
+          </Panel>
+        ))}
+      {active === "backtest" &&
+        (initialBacktest ? (
+          <BacktestPanel data={initialBacktest} />
+        ) : (
+          <Panel title="Backtest unavailable">
+            <p className="text-[11px] text-fg-dim">
+              Backtest failed to run. Check server logs.
             </p>
           </Panel>
         ))}

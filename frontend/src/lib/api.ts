@@ -1,5 +1,6 @@
 import type {
   AnalysisAxesResponse,
+  BacktestReportOut,
   BriefingResponse,
   CommodityDetail,
   CommodityRow,
@@ -118,6 +119,9 @@ export const api = {
       60,
     );
   },
+
+  simulateBacktest: () =>
+    get<BacktestReportOut>("/api/simulate/backtest", 600),
 
   simulateDCF: (
     ticker: string,
