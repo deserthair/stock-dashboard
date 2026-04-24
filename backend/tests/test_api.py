@@ -571,3 +571,56 @@ def test_backtest_predictions_shape(client):
     for key in ("model", "ticker", "report_date", "predicted", "actual"):
         assert key in p
     assert p["inside_90"] in (True, False, None)
+
+
+# ---------- holdings ----------
+
+
+def test_company_holdings_shape(client):
+    r = client.get("/api/holdings/CMG")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert body["total_institutions"] >= 5
+    values = [h["value_usd"] for h in body["holdings"] if h["value_usd"] is not None]
+    assert values == sorted(values, reverse=True)
+
+
+def test_company_holdings_insider_net_flow(client):
+    body = client.get("/api/holdings/CMG").json()
+    flow = body["insider_net_flow_90d"]
+    assert flow["net_shares"] < 0  # CMG seed: all sells / vests
+    assert flow["sell_shares"] > 0
+    assert flow["transaction_count"] >= 4
+
+
+def test_company_holdings_10b5_1_flagged(client):
+    body = client.get("/api/holdings/CMG").json()
+    assert any(t["is_10b5_1"] for t in body["insider_transactions_90d"])
+
+
+def test_company_holdings_unknown_ticker_404(client):
+    r = client.get("/api/holdings/ZZZ")
+    assert r.status_code == 404
+
+
+def test_universe_holdings(client):
+    r = client.get("/api/holdings")
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["rows"]) == 8
+    names = {i["name"] for i in body["top_institutions"]}
+    assert "Vanguard Group" in names
+    assert "BlackRock Inc." in names
+
+
+def test_universe_holdings_cmg_ackman_stake(client):
+    body = client.get("/api/holdings/CMG").json()
+    holders = [h["institution"]["name"] for h in body["holdings"]]
+    assert "Pershing Square Capital" in holders
+    pershing = next(
+        h for h in body["holdings"]
+        if h["institution"]["name"] == "Pershing Square Capital"
+    )
+    assert pershing["institution"]["kind"] == "activist"
+    assert (pershing["pct_change"] or 0) > 0

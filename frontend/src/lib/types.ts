@@ -65,6 +65,13 @@ export type DCFResultOut = S["DCFResultOut"];
 export type BacktestPredictionOut = S["BacktestPredictionOut"];
 export type BacktestModelSummaryOut = S["BacktestModelSummaryOut"];
 export type BacktestReportOut = S["BacktestReportOut"];
+export type InstitutionOut = S["InstitutionOut"];
+export type InstitutionalHoldingRow = S["InstitutionalHoldingRow"];
+export type InsiderTransactionRow = S["InsiderTransactionRow"];
+export type InsiderNetFlow = S["InsiderNetFlow"];
+export type CompanyHoldingsOut = S["CompanyHoldingsOut"];
+export type UniverseHoldingsRow = S["UniverseHoldingsRow"];
+export type UniverseHoldingsOut = S["UniverseHoldingsOut"];
 
 // MacroSeriesDetail.observations is typed as list[dict] on the backend.
 // Narrow it here to the shape we actually produce and consume.

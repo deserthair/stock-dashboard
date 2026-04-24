@@ -22,6 +22,9 @@ from .models import (
     EarningsPostmortem,
     Event,
     Fundamental,
+    InsiderTransaction,
+    Institution,
+    InstitutionalHolding,
     MacroSeries,
     OptionsSnapshot,
     PriceDaily,
@@ -513,6 +516,8 @@ def run() -> None:
         _seed_demo_commodities(s)
         # --- demo options snapshots per company
         _seed_demo_options(s, by_ticker)
+        # --- demo institutional holdings + insider Form 4 transactions
+        _seed_demo_holdings(s, by_ticker)
         s.commit()
 
     # Run a one-shot correlation pass now that features exist so the
@@ -929,6 +934,263 @@ def _seed_demo_options(s, by_ticker: dict) -> None:
                     total_put_oi=put_oi,
                     put_call_volume_ratio=round(put_vol / call_vol, 3) if call_vol else None,
                     put_call_oi_ratio=round(put_oi / call_oi, 3) if call_oi else None,
+                )
+            )
+
+
+INSTITUTIONS_SEED = [
+    # (name, kind, website, x_handle, aum_usd)
+    ("Vanguard Group",              "index_fund",  "https://about.vanguard.com",       "vanguard_group", 8_600_000_000_000),
+    ("BlackRock Inc.",              "index_fund",  "https://www.blackrock.com",        "BlackRock",      10_000_000_000_000),
+    ("State Street Global Advisors","index_fund",  "https://www.ssga.com",             "StateStreet",     4_100_000_000_000),
+    ("Fidelity Management & Research","institution","https://www.fidelity.com",        "Fidelity",        4_900_000_000_000),
+    ("T. Rowe Price Associates",    "institution","https://www.troweprice.com",        "TRowePrice",      1_500_000_000_000),
+    ("Capital Research & Management","institution","https://www.capitalgroup.com",     "Capital_Group",   2_700_000_000_000),
+    ("Geode Capital Management",    "index_fund",  "https://www.geodecapital.com",     None,              1_200_000_000_000),
+    ("Pershing Square Capital",     "activist",    "https://pershingsquareholdings.com","BillAckman",        18_000_000_000),
+    ("Berkshire Hathaway",          "hedge_fund",  "https://www.berkshirehathaway.com",None,                860_000_000_000),
+    ("Wellington Management",       "institution","https://www.wellington.com",        None,              1_400_000_000_000),
+    ("Norges Bank Investment Mgmt", "institution","https://www.nbim.no",               "NBIM",            1_700_000_000_000),
+    ("Morgan Stanley Investment Mgmt","institution","https://www.morganstanley.com",   None,                1_500_000_000_000),
+]
+
+# Per-ticker institutional holdings as of the seed anchor date.
+# (institution_name, pct_of_outstanding, pct_change_QoQ)
+# Approximates real ownership structures while staying internally consistent.
+HOLDINGS_SEED = {
+    "CMG":  [
+        ("Vanguard Group",               8.9, 0.4),
+        ("BlackRock Inc.",               6.5, -0.2),
+        ("Pershing Square Capital",      4.8, 2.1),    # recent Ackman accumulation
+        ("T. Rowe Price Associates",     4.1, 1.8),
+        ("State Street Global Advisors", 3.7, 0.1),
+        ("Fidelity Management & Research",3.4, -0.5),
+        ("Geode Capital Management",     2.2, 0.3),
+        ("Capital Research & Management",2.1, -1.2),
+        ("Wellington Management",        1.8, 0.7),
+    ],
+    "SBUX": [
+        ("Vanguard Group",               9.3, 0.2),
+        ("BlackRock Inc.",               7.4, -0.4),
+        ("State Street Global Advisors", 4.5, 0.1),
+        ("Capital Research & Management",4.1, 0.8),
+        ("Fidelity Management & Research",2.9, -0.7),
+        ("Geode Capital Management",     2.3, 0.2),
+        ("T. Rowe Price Associates",     2.0, -2.3),  # notable sell
+        ("Morgan Stanley Investment Mgmt",1.7, -0.3),
+    ],
+    "MCD":  [
+        ("Vanguard Group",               9.1, 0.3),
+        ("BlackRock Inc.",               7.9, 0.1),
+        ("State Street Global Advisors", 4.8, 0.0),
+        ("Geode Capital Management",     2.4, 0.2),
+        ("Capital Research & Management",2.0, -0.1),
+        ("Fidelity Management & Research",1.9, 0.3),
+        ("T. Rowe Price Associates",     1.5, 0.4),
+        ("Norges Bank Investment Mgmt",  1.4, 0.2),
+    ],
+    "CAVA": [
+        ("Vanguard Group",               6.2, 3.4),  # rapidly accumulating
+        ("BlackRock Inc.",               5.1, 2.9),
+        ("T. Rowe Price Associates",     4.0, 4.1),
+        ("Capital Research & Management",3.4, 2.2),
+        ("Fidelity Management & Research",2.8, 5.0),  # big buyer
+        ("State Street Global Advisors", 2.1, 1.1),
+        ("Geode Capital Management",     1.7, 1.5),
+    ],
+    "TXRH": [
+        ("Vanguard Group",               10.1, 0.1),
+        ("BlackRock Inc.",               8.2, -0.3),
+        ("State Street Global Advisors", 4.3, 0.0),
+        ("T. Rowe Price Associates",     3.7, -1.1),
+        ("Fidelity Management & Research",2.8, -0.6),
+        ("Geode Capital Management",     2.4, 0.2),
+        ("Wellington Management",        1.9, 0.4),
+    ],
+    "WING": [
+        ("Vanguard Group",               10.6, 0.5),
+        ("BlackRock Inc.",                9.1, 0.2),
+        ("T. Rowe Price Associates",      6.4, 1.3),
+        ("State Street Global Advisors",  4.2, 0.0),
+        ("Fidelity Management & Research",3.1, 0.8),
+        ("Wellington Management",         2.3, 0.5),
+        ("Geode Capital Management",      2.0, 0.3),
+    ],
+    "DPZ":  [
+        ("Berkshire Hathaway",           8.8,  2.4),   # Buffett stake
+        ("Vanguard Group",               8.4, -0.1),
+        ("BlackRock Inc.",               6.8,  0.0),
+        ("State Street Global Advisors", 4.1, -0.2),
+        ("T. Rowe Price Associates",     3.2,  0.3),
+        ("Fidelity Management & Research",2.6, -0.4),
+        ("Capital Research & Management",2.0, -1.0),
+    ],
+    "QSR":  [
+        ("Vanguard Group",               7.8,  0.2),
+        ("BlackRock Inc.",               6.1, -0.1),
+        ("Capital Research & Management",4.2,  0.9),
+        ("State Street Global Advisors", 3.4,  0.0),
+        ("T. Rowe Price Associates",     2.8, -0.4),
+        ("Norges Bank Investment Mgmt",  2.0,  0.1),
+        ("Geode Capital Management",     1.9,  0.2),
+    ],
+}
+
+# Plausible Form 4 activity — mix of planned 10b5-1 sells, RSU vests, and the
+# rarer open-market buys that actually signal. Over a 90-day window.
+INSIDERS_SEED = {
+    "CMG":  [
+        ("Scott Boatwright",    "CEO",           "2026-04-01", "sell",   12_000,  58.00, True),
+        ("Scott Boatwright",    "CEO",           "2026-02-10", "rsu_vest", 8_000, 62.00, False),
+        ("Jack Hartung",        "CFO",           "2026-03-15", "sell",    5_500,  60.00, True),
+        ("John Hartung",        "CFO",           "2026-01-28", "option_exercise", 4_000, 45.00, False),
+        ("Laurie Schalow",      "Chief Corp Affairs","2026-02-05","sell",  1_800, 61.50, True),
+    ],
+    "SBUX": [
+        ("Brian Niccol",        "CEO",           "2026-04-05", "sell",   40_000,  84.50, True),
+        ("Rachel Ruggeri",      "CFO",           "2026-03-20", "sell",   14_000,  85.80, True),
+        ("Rachel Ruggeri",      "CFO",           "2026-02-18", "rsu_vest",10_000,  85.00, False),
+        ("Brady Brewer",        "CMO",           "2026-01-30", "sell",    6_500,  86.20, True),
+        ("Sara Trilling",       "NA President",  "2026-02-25", "sell",    3_200,  85.60, True),
+    ],
+    "MCD":  [
+        ("Chris Kempczinski",   "CEO",           "2026-03-25", "sell",    22_000, 290.00, True),
+        ("Ian Borden",          "CFO",           "2026-02-12", "sell",     8_500, 288.40, True),
+        ("Joe Erlinger",        "US President",  "2026-02-04", "sell",     4_200, 289.10, True),
+        ("Ian Borden",          "CFO",           "2026-01-20", "rsu_vest", 15_000, 292.00, False),
+    ],
+    "CAVA": [
+        ("Brett Schulman",      "CEO",           "2026-03-10", "sell",    18_000, 108.00, True),
+        ("Ron Shaich",          "Director",      "2026-02-08", "buy",     50_000, 104.50, False),  # open market buy — signal
+        ("Tricia Tolivar",      "CFO",           "2026-02-20", "sell",     6_000, 111.00, True),
+        ("Brett Schulman",      "CEO",           "2026-01-15", "rsu_vest",20_000, 102.00, False),
+    ],
+    "TXRH": [
+        ("Jerry Morgan",        "CEO",           "2026-03-18", "sell",    11_000, 175.00, True),
+        ("Tonya Robinson",      "CFO",           "2026-02-14", "sell",     4_500, 174.00, True),
+    ],
+    "WING": [
+        ("Michael Skipworth",   "CEO",           "2026-04-02", "sell",     6_500, 325.00, True),
+        ("Alex Kaleida",        "CFO",           "2026-03-05", "sell",     2_800, 320.00, True),
+        ("Michael Skipworth",   "CEO",           "2026-02-10", "rsu_vest", 4_000, 310.00, False),
+    ],
+    "DPZ":  [
+        ("Russell Weiner",      "CEO",           "2026-03-12", "sell",     3_500, 455.00, True),
+        ("Sandeep Reddy",       "CFO",           "2026-02-06", "rsu_vest", 2_500, 448.00, False),
+    ],
+    "QSR":  [
+        ("Joshua Kobza",        "CEO",           "2026-03-08", "sell",    14_000,  69.00, True),
+        ("Sami Siddiqui",       "CFO",           "2026-02-22", "sell",     5_500,  68.50, True),
+    ],
+}
+
+
+def _seed_demo_holdings(s, by_ticker: dict) -> None:
+    """Wipe + reseed institutions, institutional_holdings, insider_transactions.
+    Produces two snapshot dates (current + prior quarter) so the QoQ delta
+    fields have something to show on the Holdings tab."""
+    s.query(InsiderTransaction).delete()
+    s.query(InstitutionalHolding).delete()
+    s.query(Institution).delete()
+    s.flush()
+
+    # Institutions
+    inst_by_name: dict[str, Institution] = {}
+    for (name, kind, website, x_handle, aum) in INSTITUTIONS_SEED:
+        inst = Institution(
+            name=name, kind=kind, website=website, x_handle=x_handle, aum_usd=float(aum)
+        )
+        s.add(inst)
+        inst_by_name[name] = inst
+    s.flush()
+
+    # Two snapshot dates: current = 2026-04-20, prior = 2026-01-20
+    current = date(2026, 4, 20)
+    prior = date(2026, 1, 20)
+
+    # Rough shares_outstanding estimates per ticker for magnitude scaling.
+    shares_out = {
+        "CMG":  27_000_000, "SBUX": 1_140_000_000, "MCD": 720_000_000,
+        "CAVA": 117_000_000, "TXRH": 67_000_000, "WING": 29_000_000,
+        "DPZ":  34_000_000, "QSR":  320_000_000,
+    }
+
+    for ticker, rows in HOLDINGS_SEED.items():
+        company = by_ticker.get(ticker)
+        if company is None:
+            continue
+        sh_out = shares_out.get(ticker, 100_000_000)
+        sig = s.get(CompanySignal, company.company_id)
+        price = float(sig.last_price) if sig and sig.last_price else 100.0
+
+        for (inst_name, pct_now, pct_delta) in rows:
+            inst = inst_by_name.get(inst_name)
+            if inst is None:
+                continue
+            shares_now = int(sh_out * pct_now / 100)
+            shares_prev = int(sh_out * (pct_now - pct_delta) / 100)
+            shares_change = shares_now - shares_prev
+            pct_change = (
+                round((shares_now / shares_prev - 1) * 100, 2)
+                if shares_prev > 0
+                else None
+            )
+
+            s.add(
+                InstitutionalHolding(
+                    company_id=company.company_id,
+                    institution_id=inst.institution_id,
+                    as_of_date=prior,
+                    shares=shares_prev,
+                    value_usd=shares_prev * price * 0.92,  # prior price ≈ 92% of current
+                    pct_of_outstanding=round(pct_now - pct_delta, 2),
+                    source="seed:demo",
+                )
+            )
+            s.add(
+                InstitutionalHolding(
+                    company_id=company.company_id,
+                    institution_id=inst.institution_id,
+                    as_of_date=current,
+                    shares=shares_now,
+                    value_usd=shares_now * price,
+                    pct_of_outstanding=pct_now,
+                    shares_change=shares_change,
+                    pct_change=pct_change,
+                    source="seed:demo",
+                )
+            )
+
+    # Insider transactions
+    import hashlib
+
+    for ticker, txns in INSIDERS_SEED.items():
+        company = by_ticker.get(ticker)
+        if company is None:
+            continue
+        for (insider, title, dt, ttype, shares, price, is_planned) in txns:
+            key = f"{ticker}|{insider}|{dt}|{shares}|{ttype}"
+            acc = hashlib.sha256(key.encode()).hexdigest()[:32]
+            is_officer = any(
+                k in title.upper() for k in ("CEO", "CFO", "COO", "CMO", "PRESIDENT", "OFFICER")
+            )
+            is_director = "DIRECTOR" in title.upper()
+            s.add(
+                InsiderTransaction(
+                    company_id=company.company_id,
+                    accession_number=acc,
+                    insider_name=insider,
+                    insider_title=title,
+                    insider_is_officer=is_officer,
+                    insider_is_director=is_director,
+                    transaction_date=date.fromisoformat(dt),
+                    filed_at=datetime.utcnow(),
+                    transaction_type=ttype,
+                    shares=shares,
+                    price=price,
+                    value_usd=shares * price,
+                    shares_owned_after=None,
+                    is_10b5_1=is_planned and ttype == "sell",
                 )
             )
 

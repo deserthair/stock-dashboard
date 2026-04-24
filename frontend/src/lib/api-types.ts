@@ -585,6 +585,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/holdings/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Company Holdings */
+        get: operations["get_company_holdings_api_holdings__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holdings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Universe Holdings */
+        get: operations["list_universe_holdings_api_holdings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ops/source-runs": {
         parameters: {
             query?: never;
@@ -842,6 +876,22 @@ export interface components {
             metrics: components["schemas"]["QualityMetricsOut"];
             /** Quarterly */
             quarterly: components["schemas"]["FundamentalRow"][];
+        };
+        /** CompanyHoldingsOut */
+        CompanyHoldingsOut: {
+            /** Ticker */
+            ticker: string;
+            /** As Of Date */
+            as_of_date: string | null;
+            /** Total Institutional Pct */
+            total_institutional_pct: number | null;
+            /** Total Institutions */
+            total_institutions: number;
+            /** Holdings */
+            holdings: components["schemas"]["InstitutionalHoldingRow"][];
+            /** Insider Transactions 90D */
+            insider_transactions_90d: components["schemas"]["InsiderTransactionRow"][];
+            insider_net_flow_90d: components["schemas"]["InsiderNetFlow"];
         };
         /** CompanyPriceHistory */
         CompanyPriceHistory: {
@@ -1228,6 +1278,101 @@ export interface components {
             accuracy_pct: number | null;
             /** Rows */
             rows: components["schemas"]["HypothesisTrackerRow"][];
+        };
+        /** InsiderNetFlow */
+        InsiderNetFlow: {
+            /** Ticker */
+            ticker: string;
+            /** Window Days */
+            window_days: number;
+            /** Net Shares */
+            net_shares: number;
+            /** Net Value Usd */
+            net_value_usd: number;
+            /** Buy Shares */
+            buy_shares: number;
+            /** Buy Value Usd */
+            buy_value_usd: number;
+            /** Sell Shares */
+            sell_shares: number;
+            /** Sell Value Usd */
+            sell_value_usd: number;
+            /** Transaction Count */
+            transaction_count: number;
+        };
+        /** InsiderTransactionRow */
+        InsiderTransactionRow: {
+            /** Txn Id */
+            txn_id: number;
+            /** Ticker */
+            ticker: string;
+            /** Insider Name */
+            insider_name: string;
+            /** Insider Title */
+            insider_title: string | null;
+            /** Insider Is Officer */
+            insider_is_officer: boolean;
+            /** Insider Is Director */
+            insider_is_director: boolean;
+            /**
+             * Transaction Date
+             * Format: date
+             */
+            transaction_date: string;
+            /** Filed At */
+            filed_at: string | null;
+            /** Transaction Type */
+            transaction_type: string;
+            /** Shares */
+            shares: number | null;
+            /** Price */
+            price: number | null;
+            /** Value Usd */
+            value_usd: number | null;
+            /** Shares Owned After */
+            shares_owned_after: number | null;
+            /** Is 10B5 1 */
+            is_10b5_1: boolean;
+        };
+        /** InstitutionOut */
+        InstitutionOut: {
+            /** Institution Id */
+            institution_id: number;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Website */
+            website: string | null;
+            /** X Handle */
+            x_handle: string | null;
+            /** Cik */
+            cik: string | null;
+            /** Aum Usd */
+            aum_usd: number | null;
+        };
+        /** InstitutionalHoldingRow */
+        InstitutionalHoldingRow: {
+            /**
+             * As Of Date
+             * Format: date
+             */
+            as_of_date: string;
+            institution: components["schemas"]["InstitutionOut"];
+            /** Ticker */
+            ticker: string;
+            /** Shares */
+            shares: number | null;
+            /** Value Usd */
+            value_usd: number | null;
+            /** Pct Of Outstanding */
+            pct_of_outstanding: number | null;
+            /** Shares Change */
+            shares_change: number | null;
+            /** Pct Change */
+            pct_change: number | null;
+            /** Source */
+            source: string;
         };
         /** JobsSnapshotOut */
         JobsSnapshotOut: {
@@ -1723,6 +1868,40 @@ export interface components {
             change_30d_pct: number | null;
             /** Change 90D Pct */
             change_90d_pct: number | null;
+        };
+        /** UniverseHoldingsOut */
+        UniverseHoldingsOut: {
+            /** As Of Date */
+            as_of_date: string | null;
+            /** Rows */
+            rows: components["schemas"]["UniverseHoldingsRow"][];
+            /** Top Institutions */
+            top_institutions: components["schemas"]["InstitutionOut"][];
+        };
+        /** UniverseHoldingsRow */
+        UniverseHoldingsRow: {
+            /** Ticker */
+            ticker: string;
+            /** Name */
+            name: string;
+            /** Total Institutional Pct */
+            total_institutional_pct: number | null;
+            /** Top Holder Name */
+            top_holder_name: string | null;
+            /** Top Holder Pct */
+            top_holder_pct: number | null;
+            /** Biggest Buyer Name */
+            biggest_buyer_name: string | null;
+            /** Biggest Buyer Delta Shares */
+            biggest_buyer_delta_shares: number | null;
+            /** Biggest Seller Name */
+            biggest_seller_name: string | null;
+            /** Biggest Seller Delta Shares */
+            biggest_seller_delta_shares: number | null;
+            /** Insider Net Shares 90D */
+            insider_net_shares_90d: number;
+            /** Insider Net Value 90D */
+            insider_net_value_90d: number;
         };
         /** UniverseRow */
         UniverseRow: {
@@ -2860,6 +3039,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_company_holdings_api_holdings__ticker__get: {
+        parameters: {
+            query?: {
+                insider_window_days?: number;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyHoldingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_universe_holdings_api_holdings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseHoldingsOut"];
                 };
             };
         };

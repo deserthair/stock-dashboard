@@ -525,6 +525,87 @@ class DCFStatsOut(BaseModel):
     stdev: float
 
 
+class InstitutionOut(BaseModel):
+    institution_id: int
+    name: str
+    kind: str
+    website: str | None
+    x_handle: str | None
+    cik: str | None
+    aum_usd: float | None
+
+
+class InstitutionalHoldingRow(BaseModel):
+    as_of_date: date
+    institution: InstitutionOut
+    ticker: str
+    shares: int | None
+    value_usd: float | None
+    pct_of_outstanding: float | None
+    shares_change: int | None
+    pct_change: float | None
+    source: str
+
+
+class InsiderTransactionRow(BaseModel):
+    txn_id: int
+    ticker: str
+    insider_name: str
+    insider_title: str | None
+    insider_is_officer: bool
+    insider_is_director: bool
+    transaction_date: date
+    filed_at: datetime | None
+    transaction_type: str
+    shares: int | None
+    price: float | None
+    value_usd: float | None
+    shares_owned_after: int | None
+    is_10b5_1: bool
+
+
+class InsiderNetFlow(BaseModel):
+    ticker: str
+    window_days: int
+    net_shares: int
+    net_value_usd: float
+    buy_shares: int
+    buy_value_usd: float
+    sell_shares: int
+    sell_value_usd: float
+    transaction_count: int
+
+
+class CompanyHoldingsOut(BaseModel):
+    ticker: str
+    as_of_date: date | None
+    total_institutional_pct: float | None    # sum of top-N %
+    total_institutions: int
+    holdings: list[InstitutionalHoldingRow]
+    insider_transactions_90d: list[InsiderTransactionRow]
+    insider_net_flow_90d: InsiderNetFlow
+
+
+class UniverseHoldingsRow(BaseModel):
+    ticker: str
+    name: str
+    total_institutional_pct: float | None
+    top_holder_name: str | None
+    top_holder_pct: float | None
+    biggest_buyer_name: str | None
+    biggest_buyer_delta_shares: int | None
+    biggest_seller_name: str | None
+    biggest_seller_delta_shares: int | None
+    insider_net_shares_90d: int
+    insider_net_value_90d: float
+
+
+class UniverseHoldingsOut(BaseModel):
+    as_of_date: date | None
+    rows: list[UniverseHoldingsRow]
+    top_institutions: list[InstitutionOut]   # most-common across universe
+
+
 class BacktestPredictionOut(BaseModel):
     model: str
     earnings_id: int

@@ -13,6 +13,7 @@ const NAV = [
   { href: "/macro", label: "Macro" },
   { href: "/commodities", label: "Commodities" },
   { href: "/trends", label: "Trends" },
+  { href: "/holders", label: "Holders" },
   { href: "/hypotheses", label: "Hypotheses" },
   { href: "/ops", label: "Ops" },
 ];

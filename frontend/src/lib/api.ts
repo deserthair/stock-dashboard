@@ -6,6 +6,7 @@ import type {
   CommodityRow,
   CompanyDetail,
   CompanyFundamentals,
+  CompanyHoldingsOut,
   CompanyPriceHistory,
   CorrelationOut,
   DCFResultOut,
@@ -30,6 +31,7 @@ import type {
   SourceRunOut,
   TrendsQueryOut,
   TrendsSeriesOut,
+  UniverseHoldingsOut,
   UniverseRow,
   UpcomingEarnings,
 } from "./types";
@@ -122,6 +124,14 @@ export const api = {
 
   simulateBacktest: () =>
     get<BacktestReportOut>("/api/simulate/backtest", 600),
+
+  companyHoldings: (ticker: string) =>
+    get<CompanyHoldingsOut>(
+      `/api/holdings/${ticker.toUpperCase()}`,
+      600,
+    ),
+
+  universeHoldings: () => get<UniverseHoldingsOut>("/api/holdings", 600),
 
   simulateDCF: (
     ticker: string,

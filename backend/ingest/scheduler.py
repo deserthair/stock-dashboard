@@ -42,6 +42,7 @@ from ingest.sources import (
     email_imap as src_email,
     filings as src_filings,
     fundamentals as src_fundamentals,
+    holdings as src_holdings,
     jobs as src_jobs,
     macro as src_macro,
     news_rss as src_news,
@@ -85,6 +86,9 @@ JOBS = [
     (src_commodities.run_once, "commodities",  {"trigger": "cron", "hour": 6, "minute": 15}),
     # Options snapshots end-of-day so volume/OI are final.
     (src_options.run_once,     "options",      {"trigger": "cron", "hour": 22}),
+    # Institutional + insider holdings only change on SEC filing cadence (13F
+    # quarterly, Form 4 as filed). Poll daily at 05:00 — cheap when nothing new.
+    (src_holdings.run_once,    "holdings",     {"trigger": "cron", "hour": 5}),
 
     (norm_sentiment.run_once,  "sentiment",    {"trigger": "interval", "minutes": 30}),
     (norm_signals.run_once,    "signals",      {"trigger": "interval", "minutes": 30}),

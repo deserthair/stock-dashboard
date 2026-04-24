@@ -272,6 +272,72 @@ class TrendsObservation(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Institution(Base):
+    """A holder of stock in our tracked companies.
+
+    One row per asset manager / hedge fund / index fund / sovereign wealth
+    fund. Metadata only; the actual positions live on institutional_holdings."""
+
+    __tablename__ = "institutions"
+
+    institution_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(256), unique=True, index=True)
+    kind: Mapped[str] = mapped_column(String(32), default="institution")  # institution / hedge_fund / index_fund / activist / insider
+    website: Mapped[str | None] = mapped_column(String(256))
+    x_handle: Mapped[str | None] = mapped_column(String(64))
+    cik: Mapped[str | None] = mapped_column(String(16))
+    aum_usd: Mapped[float | None] = mapped_column(Float)
+
+
+class InstitutionalHolding(Base):
+    """One position per (company, institution, as_of_date).
+
+    Written from yfinance `institutional_holders` (snapshot) or SEC 13F
+    filings (historical). We keep the time series so we can show
+    quarter-over-quarter position deltas — the actionable smart-money
+    signal, not just the current holder list."""
+
+    __tablename__ = "institutional_holdings"
+
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.company_id"), primary_key=True
+    )
+    institution_id: Mapped[int] = mapped_column(
+        ForeignKey("institutions.institution_id"), primary_key=True
+    )
+    as_of_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    shares: Mapped[int | None] = mapped_column(Integer)
+    value_usd: Mapped[float | None] = mapped_column(Float)
+    pct_of_outstanding: Mapped[float | None] = mapped_column(Float)
+    shares_change: Mapped[int | None] = mapped_column(Integer)  # vs prior period
+    pct_change: Mapped[float | None] = mapped_column(Float)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    source: Mapped[str] = mapped_column(String(16), default="yfinance")
+
+
+class InsiderTransaction(Base):
+    """SEC Form 4 filing — insider bought / sold / exercised / vested."""
+
+    __tablename__ = "insider_transactions"
+
+    txn_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"))
+    accession_number: Mapped[str | None] = mapped_column(String(32), unique=True, index=True)
+    insider_name: Mapped[str] = mapped_column(String(128))
+    insider_title: Mapped[str | None] = mapped_column(String(128))
+    insider_is_officer: Mapped[bool] = mapped_column(Boolean, default=False)
+    insider_is_director: Mapped[bool] = mapped_column(Boolean, default=False)
+    transaction_date: Mapped[date] = mapped_column(Date)
+    filed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    transaction_type: Mapped[str] = mapped_column(String(32))   # buy / sell / option_exercise / gift / rsu_vest
+    shares: Mapped[int | None] = mapped_column(Integer)
+    price: Mapped[float | None] = mapped_column(Float)
+    value_usd: Mapped[float | None] = mapped_column(Float)
+    shares_owned_after: Mapped[int | None] = mapped_column(Integer)
+    is_10b5_1: Mapped[bool] = mapped_column(Boolean, default=False)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class CommodityMeta(Base):
     """Metadata for a tracked food/energy commodity."""
 

@@ -11,6 +11,7 @@ from .routes import (
     earnings,
     events,
     filings,
+    holdings,
     hypotheses,
     jobs,
     macro,
@@ -66,4 +67,5 @@ app.include_router(trends.router)
 app.include_router(commodities.router)
 app.include_router(options.router)
 app.include_router(simulate.router)
+app.include_router(holdings.router)
 app.include_router(ops.router)

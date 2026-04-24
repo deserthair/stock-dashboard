@@ -8,6 +8,7 @@ import { Pill, hypothesisTone } from "@/components/ui/Pill";
 import { EarningsHistory } from "@/components/company/EarningsHistory";
 import { Financials } from "@/components/company/Financials";
 import { FilingsList } from "@/components/company/FilingsList";
+import { HoldingsPanel } from "@/components/company/HoldingsPanel";
 import { JobsList } from "@/components/company/JobsList";
 import { NewsList } from "@/components/company/NewsList";
 import { OptionsActivity } from "@/components/company/OptionsActivity";
@@ -44,8 +45,9 @@ export default async function CompanyPage({
   let earnings;
   let fundamentals;
   let optionsSummary;
+  let holdings;
   try {
-    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals, optionsSummary] = await Promise.all([
+    [company, universe, news, filings, social, jobs, prices, earnings, fundamentals, optionsSummary, holdings] = await Promise.all([
       api.company(params.ticker),
       api.universe(),
       api.news(params.ticker, 30, range).catch(() => []),
@@ -56,6 +58,7 @@ export default async function CompanyPage({
       api.earningsAll({ ticker: params.ticker, past_only: true }, range).catch(() => []),
       api.companyFundamentals(params.ticker).catch(() => null),
       api.optionsSummary(params.ticker).catch(() => null),
+      api.companyHoldings(params.ticker).catch(() => null),
     ]);
   } catch {
     notFound();
@@ -254,6 +257,22 @@ export default async function CompanyPage({
                 <p className="text-[11px] text-fg-dim">
                   No snapshots yet. Run{" "}
                   <code>python -m ingest.sources.options</code>.
+                </p>
+              </Panel>
+            ),
+          },
+          {
+            id: "holdings",
+            label: holdings
+              ? `Holdings (${holdings.total_institutional_pct ?? "?"}% inst)`
+              : "Holdings",
+            content: holdings ? (
+              <HoldingsPanel data={holdings} />
+            ) : (
+              <Panel title="Holdings">
+                <p className="text-[11px] text-fg-dim">
+                  No institutional or insider data yet. Run{" "}
+                  <code>python -m ingest.sources.holdings</code>.
                 </p>
               </Panel>
             ),
