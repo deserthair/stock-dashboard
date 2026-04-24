@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from simulation import dcf as dcf_sim
 from simulation import earnings_bootstrap, price_paths
 
 from ..db import get_db
 from ..schemas import (
     BootstrapQuantilesOut,
+    DCFResultOut,
+    DCFStatsOut,
     EarningsBootstrapOut,
     HistogramBinOut,
     PeerEventOut,
@@ -58,6 +61,60 @@ def price_path_simulation(
         terminal_stats=TerminalStatsOut(**result.terminal_stats.__dict__),
         earnings_dates_in_window=result.earnings_dates_in_window,
         jump_sigma_at_earnings=result.jump_sigma_at_earnings,
+        notes=result.notes,
+    )
+
+
+@router.get("/dcf/{ticker}", response_model=DCFResultOut)
+def dcf_simulation(
+    ticker: str,
+    db: Session = Depends(get_db),
+    n_simulations: int = Query(default=10_000, ge=500, le=50_000),
+    years_explicit: int = Query(default=10, ge=3, le=20),
+    wacc_mean: float = Query(default=0.09, ge=0.02, le=0.25),
+    wacc_std: float = Query(default=0.01, ge=0.001, le=0.05),
+    terminal_growth: float = Query(default=0.025, ge=0.0, le=0.06),
+    growth_override: float | None = Query(default=None),
+    margin_override: float | None = Query(default=None),
+    seed: int | None = Query(default=None),
+) -> DCFResultOut:
+    try:
+        result = dcf_sim.simulate(
+            db,
+            ticker,
+            n_simulations=n_simulations,
+            years_explicit=years_explicit,
+            wacc_mean=wacc_mean,
+            wacc_std=wacc_std,
+            terminal_growth=terminal_growth,
+            growth_override=growth_override,
+            margin_override=margin_override,
+            seed=seed,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return DCFResultOut(
+        ticker=result.ticker,
+        current_price=result.current_price,
+        n_simulations=result.n_simulations,
+        n_valid=result.n_valid,
+        years_explicit=result.years_explicit,
+        shares_diluted=result.shares_diluted,
+        revenue_growth_mean_pct=result.revenue_growth_mean_pct,
+        revenue_growth_std_pct=result.revenue_growth_std_pct,
+        fcf_margin_mean_pct=result.fcf_margin_mean_pct,
+        fcf_margin_std_pct=result.fcf_margin_std_pct,
+        wacc_mean_pct=result.wacc_mean_pct,
+        wacc_std_pct=result.wacc_std_pct,
+        terminal_growth_pct=result.terminal_growth_pct,
+        intrinsic_value_stats=DCFStatsOut(**result.intrinsic_value_stats.__dict__),
+        intrinsic_value_histogram=[
+            HistogramBinOut(**h.__dict__) for h in result.intrinsic_value_histogram
+        ],
+        prob_undervalued=result.prob_undervalued,
+        margin_of_safety_at_p50_pct=result.margin_of_safety_at_p50_pct,
+        fit_quarters=result.fit_quarters,
         notes=result.notes,
     )
 

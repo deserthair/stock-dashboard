@@ -534,6 +534,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/simulate/dcf/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dcf Simulation */
+        get: operations["dcf_simulation_api_simulate_dcf__ticker__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/simulate/earnings-bootstrap/{ticker}": {
         parameters: {
             query?: never;
@@ -774,6 +791,63 @@ export interface components {
             p_value: number | null;
             /** P Adjusted */
             p_adjusted: number | null;
+        };
+        /** DCFResultOut */
+        DCFResultOut: {
+            /** Ticker */
+            ticker: string;
+            /** Current Price */
+            current_price: number | null;
+            /** N Simulations */
+            n_simulations: number;
+            /** N Valid */
+            n_valid: number;
+            /** Years Explicit */
+            years_explicit: number;
+            /** Shares Diluted */
+            shares_diluted: number | null;
+            /** Revenue Growth Mean Pct */
+            revenue_growth_mean_pct: number;
+            /** Revenue Growth Std Pct */
+            revenue_growth_std_pct: number;
+            /** Fcf Margin Mean Pct */
+            fcf_margin_mean_pct: number;
+            /** Fcf Margin Std Pct */
+            fcf_margin_std_pct: number;
+            /** Wacc Mean Pct */
+            wacc_mean_pct: number;
+            /** Wacc Std Pct */
+            wacc_std_pct: number;
+            /** Terminal Growth Pct */
+            terminal_growth_pct: number;
+            intrinsic_value_stats: components["schemas"]["DCFStatsOut"];
+            /** Intrinsic Value Histogram */
+            intrinsic_value_histogram: components["schemas"]["HistogramBinOut"][];
+            /** Prob Undervalued */
+            prob_undervalued: number | null;
+            /** Margin Of Safety At P50 Pct */
+            margin_of_safety_at_p50_pct: number | null;
+            /** Fit Quarters */
+            fit_quarters: number;
+            /** Notes */
+            notes: string[];
+        };
+        /** DCFStatsOut */
+        DCFStatsOut: {
+            /** Mean */
+            mean: number;
+            /** P05 */
+            p05: number;
+            /** P25 */
+            p25: number;
+            /** P50 */
+            p50: number;
+            /** P75 */
+            p75: number;
+            /** P95 */
+            p95: number;
+            /** Stdev */
+            stdev: number;
         };
         /** EarningsBootstrapOut */
         EarningsBootstrapOut: {
@@ -2600,6 +2674,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PricePathSimulationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dcf_simulation_api_simulate_dcf__ticker__get: {
+        parameters: {
+            query?: {
+                n_simulations?: number;
+                years_explicit?: number;
+                wacc_mean?: number;
+                wacc_std?: number;
+                terminal_growth?: number;
+                growth_override?: number | null;
+                margin_override?: number | null;
+                seed?: number | null;
+            };
+            header?: never;
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DCFResultOut"];
                 };
             };
             /** @description Validation Error */

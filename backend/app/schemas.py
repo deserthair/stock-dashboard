@@ -515,6 +515,41 @@ class EarningsBootstrapOut(BaseModel):
     notes: list[str]
 
 
+class DCFStatsOut(BaseModel):
+    mean: float
+    p05: float
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+    stdev: float
+
+
+class DCFResultOut(BaseModel):
+    ticker: str
+    current_price: float | None
+    n_simulations: int
+    n_valid: int
+    years_explicit: int
+    shares_diluted: float | None
+
+    revenue_growth_mean_pct: float
+    revenue_growth_std_pct: float
+    fcf_margin_mean_pct: float
+    fcf_margin_std_pct: float
+    wacc_mean_pct: float
+    wacc_std_pct: float
+    terminal_growth_pct: float
+
+    intrinsic_value_stats: DCFStatsOut
+    intrinsic_value_histogram: list[HistogramBinOut]
+    prob_undervalued: float | None
+    margin_of_safety_at_p50_pct: float | None
+
+    fit_quarters: int
+    notes: list[str]
+
+
 class HypothesisTrackerSummary(BaseModel):
     total: int
     scored: int

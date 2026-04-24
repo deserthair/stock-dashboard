@@ -7,6 +7,7 @@ import type {
   CompanyFundamentals,
   CompanyPriceHistory,
   CorrelationOut,
+  DCFResultOut,
   EarningsBootstrapOut,
   EarningsPostmortemOut,
   EarningsRow,
@@ -115,6 +116,30 @@ export const api = {
     return get<PricePathSimulationOut>(
       `/api/simulate/price-paths/${ticker.toUpperCase()}${s ? `?${s}` : ""}`,
       60,
+    );
+  },
+
+  simulateDCF: (
+    ticker: string,
+    params: {
+      n_simulations?: number;
+      years_explicit?: number;
+      wacc_mean?: number;
+      wacc_std?: number;
+      terminal_growth?: number;
+      growth_override?: number;
+      margin_override?: number;
+      seed?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined) qs.set(k, String(v));
+    }
+    const s = qs.toString();
+    return get<DCFResultOut>(
+      `/api/simulate/dcf/${ticker.toUpperCase()}${s ? `?${s}` : ""}`,
+      300,
     );
   },
 

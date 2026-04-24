@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
-import { SimulatePanel } from "./SimulatePanel";
+import { SimulateTabs } from "./SimulateTabs";
 
 const DEFAULT_TICKER = "CMG";
 const DEFAULT_HORIZON = 30;
@@ -16,7 +16,7 @@ export default async function SimulatePage({
       ? searchParams.ticker.toUpperCase()
       : DEFAULT_TICKER;
 
-  const [universe, initialPrice, initialBootstrap] = await Promise.all([
+  const [universe, initialPrice, initialBootstrap, initialDCF] = await Promise.all([
     api.universe(),
     api.simulatePricePaths(ticker, {
       horizon_days: DEFAULT_HORIZON,
@@ -25,6 +25,7 @@ export default async function SimulatePage({
       seed: 42,
     }),
     api.simulateEarningsBootstrap(ticker, { seed: 42 }),
+    api.simulateDCF(ticker, { seed: 42 }).catch(() => null),
   ]);
 
   return (
@@ -32,7 +33,7 @@ export default async function SimulatePage({
       <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
         <h1 className="font-serif text-2xl font-medium tracking-tight">Simulations</h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
-          Monte Carlo price paths · earnings-reaction bootstrap
+          Monte Carlo price paths · earnings-reaction bootstrap · probabilistic DCF
         </span>
       </header>
 
@@ -41,24 +42,22 @@ export default async function SimulatePage({
           ◆ What this is, honestly
         </div>
         <div className="font-serif text-[13px] leading-[1.6] text-fg">
-          <strong>Monte Carlo paths</strong> fit a log-normal return
-          distribution (μ, σ) from recent daily closes and project forward.
-          The <strong>Merton</strong> variant injects a log-normal jump
-          at each scheduled earnings date using the latest options-implied
-          move. The <strong>bootstrap</strong> resamples actual
-          post-earnings reactions from peer events with similar hypothesis
-          scores. None of this is a prediction — it&apos;s a distribution
-          grounded in the data you already have. GBM assumes constant
-          volatility and ignores fat tails; the implied-move jump is the
-          market&apos;s expectation, not a floor or ceiling.
+          <strong>Price paths</strong> fit GBM (or Merton at earnings) from recent
+          daily closes. <strong>Bootstrap</strong> resamples actual post-earnings
+          reactions from similar-score peer events. <strong>DCF</strong> Monte
+          Carlos over growth × margin × WACC to produce a distribution of
+          intrinsic value per share. None of this is a prediction — it&apos;s a
+          distribution grounded in data. Each tab&apos;s caveats are called out
+          inline.
         </div>
       </div>
 
-      <SimulatePanel
+      <SimulateTabs
         universe={universe}
         initialTicker={ticker}
         initialPrice={initialPrice}
         initialBootstrap={initialBootstrap}
+        initialDCF={initialDCF}
       />
     </Shell>
   );

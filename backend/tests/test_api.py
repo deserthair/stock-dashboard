@@ -500,3 +500,42 @@ def test_earnings_bootstrap_shape(client):
 def test_earnings_bootstrap_unknown_ticker_400(client):
     r = client.get("/api/simulate/earnings-bootstrap/ZZZ")
     assert r.status_code == 400
+
+
+def test_dcf_shape(client):
+    r = client.get("/api/simulate/dcf/CMG?seed=42&n_simulations=2000")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "CMG"
+    assert body["n_valid"] > 0
+    s = body["intrinsic_value_stats"]
+    assert s["p05"] <= s["p25"] <= s["p50"] <= s["p75"] <= s["p95"]
+    assert len(body["intrinsic_value_histogram"]) == 50
+    assert body["fit_quarters"] >= 16
+
+
+def test_dcf_parameters_fit_from_history(client):
+    body = client.get("/api/simulate/dcf/CMG?seed=42&n_simulations=2000").json()
+    # CMG seed has ~14% revenue growth + ~11% FCF margin
+    assert 5 < body["revenue_growth_mean_pct"] < 25
+    assert 5 < body["fcf_margin_mean_pct"] < 25
+
+
+def test_dcf_override_growth(client):
+    a = client.get("/api/simulate/dcf/CMG?seed=42&n_simulations=2000").json()
+    b = client.get(
+        "/api/simulate/dcf/CMG?seed=42&n_simulations=2000&growth_override=0.02"
+    ).json()
+    assert b["intrinsic_value_stats"]["p50"] < a["intrinsic_value_stats"]["p50"]
+
+
+def test_dcf_unknown_ticker_400(client):
+    r = client.get("/api/simulate/dcf/ZZZ")
+    assert r.status_code == 400
+
+
+def test_dcf_wacc_below_terminal_growth_400(client):
+    r = client.get(
+        "/api/simulate/dcf/CMG?wacc_mean=0.03&wacc_std=0.002&terminal_growth=0.05&n_simulations=500"
+    )
+    assert r.status_code == 400
