@@ -6,6 +6,9 @@ import type { InfoContent } from "./InfoIcon";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+const EXPLAIN_QUESTION =
+  "Look at the data snapshot of what's currently on screen. In plain English, what are the most notable patterns or outliers, and what should I pay attention to right now?";
+
 export function InfoModal({
   info,
   onClose,
@@ -15,6 +18,7 @@ export function InfoModal({
 }) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
+  const [answerLabel, setAnswerLabel] = useState<string>("Answer");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -33,20 +37,24 @@ export function InfoModal({
     };
   }, [onClose]);
 
-  async function ask() {
-    if (!question.trim() || loading) return;
+  async function send(q: string, label: string) {
+    if (!q.trim() || loading) return;
     setLoading(true);
     setError(null);
     setAnswer(null);
+    setAnswerLabel(label);
     try {
+      const pageCtx = [info.pageContext, info.dataSnapshot]
+        .filter(Boolean)
+        .join("\n\n");
       const res = await fetch(`${BASE}/api/ai/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           section_title: info.title,
           section_explanation: info.explanation,
-          page_context: info.pageContext ?? "",
-          question: question.trim(),
+          page_context: pageCtx,
+          question: q.trim(),
         }),
       });
       if (!res.ok) {
@@ -98,6 +106,26 @@ export function InfoModal({
             </p>
           </section>
 
+          {(info.dataSnapshot || info.pageContext) && (
+            <section className="border-t border-border pt-4">
+              <h3 className="mb-1.5 text-[10px] uppercase tracking-[0.15em] text-accent">
+                Explain current results
+              </h3>
+              <p className="mb-2 text-[11px] text-fg-dim">
+                Have Claude read the data on screen and call out what&apos;s
+                notable right now.
+              </p>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => send(EXPLAIN_QUESTION, "What's notable right now")}
+                className="rounded-sm border border-accent bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:border-border disabled:bg-panel-2 disabled:text-fg-faint"
+              >
+                {loading ? "Reading…" : "Explain these results"}
+              </button>
+            </section>
+          )}
+
           <section className="border-t border-border pt-4">
             <h3 className="mb-1.5 text-[10px] uppercase tracking-[0.15em] text-accent">
               Ask AI
@@ -117,7 +145,7 @@ export function InfoModal({
               <button
                 type="button"
                 disabled={loading || !question.trim()}
-                onClick={ask}
+                onClick={() => send(question, "Answer")}
                 className="rounded-sm border border-accent bg-accent/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:border-border disabled:bg-panel-2 disabled:text-fg-faint"
               >
                 {loading ? "Asking…" : "Ask AI"}
@@ -126,18 +154,18 @@ export function InfoModal({
                 <span className="text-[11px] text-down">Error: {error}</span>
               )}
             </div>
-
-            {answer && (
-              <div className="mt-3 rounded-sm border border-border bg-panel-2 p-3">
-                <h4 className="mb-1.5 text-[10px] uppercase tracking-[0.15em] text-fg-faint">
-                  Answer
-                </h4>
-                <p className="whitespace-pre-line text-[13px] leading-relaxed text-fg">
-                  {answer}
-                </p>
-              </div>
-            )}
           </section>
+
+          {answer && (
+            <section className="border-t border-border pt-4">
+              <h3 className="mb-1.5 text-[10px] uppercase tracking-[0.15em] text-fg-faint">
+                {answerLabel}
+              </h3>
+              <p className="whitespace-pre-line rounded-sm border border-border bg-panel-2 p-3 text-[13px] leading-relaxed text-fg">
+                {answer}
+              </p>
+            </section>
+          )}
         </div>
       </div>
     </div>,

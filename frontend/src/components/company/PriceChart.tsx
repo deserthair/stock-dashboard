@@ -59,9 +59,9 @@ export function PriceChart({
     chartRef.current = chart;
 
     const series = chart.addSeries(AreaSeries, {
-      lineColor: "#d4ff3f",
-      topColor: "rgba(212, 255, 63, 0.32)",
-      bottomColor: "rgba(212, 255, 63, 0.02)",
+      lineColor: "#c8e85a",
+      topColor: "rgba(200, 232, 90, 0.32)",
+      bottomColor: "rgba(200, 232, 90, 0.02)",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true,

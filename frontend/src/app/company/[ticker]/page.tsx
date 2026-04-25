@@ -95,7 +95,7 @@ export default async function CompanyPage({
 
   const overviewTab = (
     <div>
-      <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(212,255,63,0.04)] via-transparent to-transparent px-4 py-3.5">
+      <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(200,232,90,0.04)] via-transparent to-transparent px-4 py-3.5">
         <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-accent">
           ◆ Pre-Earnings Hypothesis
           <InfoIcon

@@ -117,7 +117,7 @@ export function ScatterPlot({ data }: { data: ScatterResponse }) {
             `${x(line.x_max)},${y(line.ci_high_at_max!)}`,
             `${x(line.x_min)},${y(line.ci_high_at_min!)}`,
           ].join(" ")}
-          fill="rgba(212, 255, 63, 0.1)"
+          fill="rgba(200, 232, 90, 0.1)"
           stroke="none"
         />
       )}

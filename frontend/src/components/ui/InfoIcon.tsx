@@ -7,6 +7,13 @@ export type InfoContent = {
   title: string;
   explanation: string;
   pageContext?: string;
+  /**
+   * Optional: a compact representation of the data currently on screen
+   * (JSON-stringified or plain text). When present, the modal shows an
+   * "Explain current results" button that asks Claude to interpret what
+   * the user is actually looking at right now.
+   */
+  dataSnapshot?: string;
 };
 
 export function InfoIcon({
