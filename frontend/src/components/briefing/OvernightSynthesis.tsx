@@ -19,6 +19,11 @@ export function OvernightSynthesis({ briefing }: { briefing: BriefingOut }) {
       title="Overnight Synthesis"
       meta={`CLAUDE · ${briefing.token_count} TOKENS · ${when} ET`}
       tight
+      info={{
+        title: "Overnight Synthesis",
+        explanation:
+          "A short pre-market briefing written by Claude (an AI assistant) every morning. It summarizes what happened overnight in the restaurant sector: the biggest story, what the broader economy is doing, where our predictive 'hypotheses' stand, and any red flags worth watching.\n\nThe AI is given a snapshot of all our data and asked to write four short sections. Tickers (like MCD, SBUX) are highlighted in green chips; bolded numbers are the key facts.\n\nIt's meant to replace skimming a dozen news sites — read this and you have the gist.",
+      }}
     >
       <div className="briefing-prose px-6 py-5 text-fg">
         {briefing.sections.map((section) => (

@@ -12,6 +12,7 @@ import {
   fmtSigned,
 } from "@/lib/format";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
 
 export default async function EarningsPage({
   searchParams,
@@ -40,7 +41,12 @@ export default async function EarningsPage({
         <DateRangePicker className="ml-auto" />
       </header>
 
-      <Panel title={`Upcoming · Next ${upcoming.length}`} meta="FINNHUB" tight>
+      <Panel
+        title={`Upcoming · Next ${upcoming.length}`}
+        meta="FINNHUB"
+        tight
+        info={INFO.earnings_upcoming}
+      >
         <table className="w-full text-[11px] tabular-nums">
           <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
             <tr>
@@ -85,7 +91,12 @@ export default async function EarningsPage({
         </table>
       </Panel>
 
-      <Panel title={`Past · ${past.length}`} meta="REPORTED" tight>
+      <Panel
+        title={`Past · ${past.length}`}
+        meta="REPORTED"
+        tight
+        info={INFO.earnings_past}
+      >
         <table className="w-full text-[11px] tabular-nums">
           <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
             <tr>

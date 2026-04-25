@@ -1,11 +1,7 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
-import { EventFeed } from "@/components/briefing/EventFeed";
-import { MacroSignals } from "@/components/briefing/MacroSignals";
+import { BriefingFilteredView } from "@/components/briefing/BriefingFilteredView";
 import { OvernightSynthesis } from "@/components/briefing/OvernightSynthesis";
-import { StatRow } from "@/components/briefing/StatRow";
-import { UniverseMatrix } from "@/components/briefing/UniverseMatrix";
-import { UpcomingEarningsTable } from "@/components/briefing/UpcomingEarningsTable";
 
 export const revalidate = 60;
 
@@ -32,19 +28,14 @@ export default async function BriefingPage() {
         </span>
       </header>
 
-      <StatRow stats={briefing.stats} />
-
-      <div className="mb-3 grid grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
-        <OvernightSynthesis briefing={briefing.briefing} />
-        <EventFeed events={briefing.events} />
-      </div>
-
-      <UniverseMatrix rows={briefing.universe} />
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <MacroSignals rows={briefing.macro} />
-        <UpcomingEarningsTable rows={briefing.upcoming_earnings} />
-      </div>
+      <BriefingFilteredView
+        stats={briefing.stats}
+        events={briefing.events}
+        universe={briefing.universe}
+        macro={briefing.macro}
+        upcomingEarnings={briefing.upcoming_earnings}
+        synthesis={<OvernightSynthesis briefing={briefing.briefing} />}
+      />
     </Shell>
   );
 }

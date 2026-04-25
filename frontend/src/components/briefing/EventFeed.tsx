@@ -9,7 +9,16 @@ const SEV: Record<string, string> = {
 
 export function EventFeed({ events }: { events: EventOut[] }) {
   return (
-    <Panel title="Live Event Feed" meta="AUTO · 5min" tight>
+    <Panel
+      title="Live Event Feed"
+      meta="AUTO · 5min"
+      tight
+      info={{
+        title: "Live Event Feed",
+        explanation:
+          "A real-time list of notable things happening to the companies we track. Each row is one event: a news article, a filing with the SEC, a social-media spike, an analyst rating change, etc.\n\nThe colored bar on the left shows severity:\n• Red = high — likely to move the stock.\n• Amber = medium — worth a look.\n• Gray = low — background.\n\nThe time shows when it hit; the ticker (e.g. MCD) is the company; the rest is a one-line description and source. Updates roughly every 5 minutes.",
+      }}
+    >
       {events.map((e, idx) => (
         <div
           key={`${e.ticker}-${e.event_at}-${idx}`}

@@ -12,7 +12,16 @@ import {
 
 export function UniverseMatrix({ rows }: { rows: UniverseRow[] }) {
   return (
-    <Panel title="Universe Matrix" meta="LIVE · PRE-MKT" tight>
+    <Panel
+      title="Universe Matrix"
+      meta="LIVE · PRE-MKT"
+      tight
+      info={{
+        title: "Universe Matrix",
+        explanation:
+          "The main scoreboard. One row per company we track, one column per signal we watch.\n\nColumn glossary:\n• Last — most recent share price.\n• Δ 1D / 5D / 30D — percent change over 1, 5, 30 days. Green = up, red = down.\n• RS vs XLY — 'relative strength' versus the consumer-discretionary ETF (XLY). Positive means the stock is beating that benchmark.\n• Next ER — the next earnings-report date.\n• News 7D — how many news articles in the last 7 days. An amber chip means well above normal volume.\n• Sent 7D — average sentiment of those articles (-1 negative, +1 positive).\n• Social Z — how unusual today's social-media chatter is, in standard deviations from normal.\n• Jobs Δ 30D — change in the company's open job postings over 30 days (a leading indicator of expansion or contraction).\n• Hypothesis — our model's overall lean (Bullish / Neutral / Bearish) plus a confidence score.",
+      }}
+    >
       <table className="w-full text-[11px] tabular-nums">
         <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
           <tr>

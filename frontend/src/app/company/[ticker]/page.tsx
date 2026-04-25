@@ -27,6 +27,8 @@ import {
   fmtSigned,
 } from "@/lib/format";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
+import { InfoIcon } from "@/components/ui/InfoIcon";
 
 export default async function CompanyPage({
   params,
@@ -94,8 +96,14 @@ export default async function CompanyPage({
   const overviewTab = (
     <div>
       <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(212,255,63,0.04)] via-transparent to-transparent px-4 py-3.5">
-        <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-accent">
+        <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-accent">
           ◆ Pre-Earnings Hypothesis
+          <InfoIcon
+            info={{
+              ...INFO.company_hypothesis,
+              pageContext: `ticker=${company.ticker}; hypothesis_score=${s.hypothesis_score}; label=${s.hypothesis_label}; rs_vs_xly=${s.rs_vs_xly}; sentiment_7d=${s.sentiment_7d}`,
+            }}
+          />
         </div>
         <div className="font-serif text-[14px] leading-[1.6] text-fg">
           Composite signal{" "}
@@ -136,7 +144,14 @@ export default async function CompanyPage({
       </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
-        <Panel title="Price · Events · 90D" meta={`${prices.bars.length} BARS · ${prices.markers.length} EVENTS`}>
+        <Panel
+          title="Price · Events · 90D"
+          meta={`${prices.bars.length} BARS · ${prices.markers.length} EVENTS`}
+          info={{
+            ...INFO.company_price,
+            pageContext: `ticker=${company.ticker}; ${prices.bars.length} bars; ${prices.markers.length} event markers`,
+          }}
+        >
           {prices.bars.length > 0 ? (
             <PriceChart bars={prices.bars} markers={prices.markers} />
           ) : (
@@ -148,7 +163,14 @@ export default async function CompanyPage({
           )}
         </Panel>
 
-        <Panel title="Feature Vector" meta="FEATURE_VERSION v0">
+        <Panel
+          title="Feature Vector"
+          meta="FEATURE_VERSION v0"
+          info={{
+            ...INFO.company_features,
+            pageContext: `ticker=${company.ticker}; rs_vs_xly=${s.rs_vs_xly}; sentiment_7d=${s.sentiment_7d}; news_7d=${s.news_7d_count}; social_z=${s.social_vol_z}; jobs_30d=${s.jobs_change_30d_pct}`,
+          }}
+        >
           <ul className="divide-y divide-border text-[11px]">
             <FeatureRow label="Δ 30D price" value={fmtPct(s.change_30d_pct)} pct={s.change_30d_pct} />
             <FeatureRow label="RS vs XLY" value={fmtSigned(s.rs_vs_xly, 1)} pct={s.rs_vs_xly} />

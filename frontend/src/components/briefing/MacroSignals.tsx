@@ -3,7 +3,16 @@ import { Panel } from "@/components/ui/Panel";
 
 export function MacroSignals({ rows }: { rows: MacroRow[] }) {
   return (
-    <Panel title="Macro Signals · 90D" meta="FRED" tight>
+    <Panel
+      title="Macro Signals · 90D"
+      meta="FRED"
+      tight
+      info={{
+        title: "Macro Signals · 90D",
+        explanation:
+          "Big-picture economic indicators that affect restaurant stocks: things like consumer spending, food prices, gas prices, employment, and interest rates.\n\nEach row shows how that indicator has changed over the last 90 days. The bar in the middle is a visual: filling to the right (green) means it went up, to the left (red) means it went down.\n\nWhy it matters: if gas is expensive and confidence is low, people eat out less. If wages are rising fast, restaurant labor costs go up. We pull these from FRED, the Fed's free economic-data service.",
+      }}
+    >
       {rows.map((r) => (
         <div
           key={r.series_id}

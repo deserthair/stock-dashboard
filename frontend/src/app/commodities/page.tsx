@@ -6,6 +6,7 @@ import { Pill } from "@/components/ui/Pill";
 import { CommoditySparkline } from "@/components/commodities/CommoditySparkline";
 import { directionClass, fmtPct } from "@/lib/format";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
 
 const CATEGORY_ORDER: { key: string; title: string; sub: string }[] = [
   { key: "protein",  title: "Protein futures",  sub: "live cattle · feeder cattle · lean hogs · poultry PPI" },
@@ -81,6 +82,11 @@ export default async function CommoditiesPage({
                         title={row.meta.label}
                         meta={`${row.meta.symbol} · ${row.meta.unit ?? ""}`}
                         tight
+                        info={{
+                          ...INFO.commodity_card,
+                          title: row.meta.label,
+                          pageContext: `symbol=${row.meta.symbol}; category=${row.meta.category}; latest=${row.latest}; 90d_change=${row.change_90d_pct}%; exposure=${row.meta.exposure.join(",")}`,
+                        }}
                       >
                         <div className="flex items-baseline gap-3 px-3 py-2">
                           <div className="font-serif text-[22px] font-medium tabular-nums">

@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
 import { SeriesChart } from "@/components/macro/SeriesChart";
 import { Panel } from "@/components/ui/Panel";
+import { INFO } from "@/lib/info";
 
 export const revalidate = 600;
 
@@ -64,6 +65,11 @@ export default async function MacroPage() {
               key={id}
               title={meta?.label ?? id}
               meta={id}
+              info={{
+                ...INFO.macro_series,
+                title: meta?.label ?? id,
+                pageContext: `series_id=${id}; exposure=${exposure.join(",")}; 90d_change=${meta?.change_label ?? "n/a"}`,
+              }}
             >
               <div className="mb-2 flex items-baseline gap-3">
                 <div

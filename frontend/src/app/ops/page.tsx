@@ -3,6 +3,7 @@ import { Shell } from "@/components/layout/Shell";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
 
 const STATUS_COLOR: Record<string, string> = {
   success: "text-up",
@@ -40,7 +41,7 @@ export default async function OpsPage({
           </p>
         </Panel>
       ) : (
-        <Panel title="Recent runs" tight>
+        <Panel title="Recent runs" tight info={INFO.ops_runs}>
           <table className="w-full text-[11px] tabular-nums">
             <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
               <tr>
