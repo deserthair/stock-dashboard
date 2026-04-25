@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .db import Base, engine
 from .routes import (
+    ai,
     analysis,
     briefing,
     commodities,
@@ -69,3 +70,4 @@ app.include_router(options.router)
 app.include_router(simulate.router)
 app.include_router(holdings.router)
 app.include_router(ops.router)
+app.include_router(ai.router)

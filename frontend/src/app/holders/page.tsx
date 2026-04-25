@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
 import { Panel } from "@/components/ui/Panel";
 import { Pill } from "@/components/ui/Pill";
+import { INFO } from "@/lib/info";
 
 function fmtShares(v: number | null | undefined): string {
   if (v === null || v === undefined) return "—";
@@ -53,7 +54,11 @@ export default async function HoldersPage() {
         </Panel>
       ) : (
         <div className="space-y-3">
-          <Panel title="Per-company ownership concentration" tight>
+          <Panel
+            title="Per-company ownership concentration"
+            tight
+            info={INFO.holders_concentration}
+          >
             <table className="w-full text-[11px] tabular-nums">
               <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
                 <tr>
@@ -146,6 +151,7 @@ export default async function HoldersPage() {
             title="Top institutions across the universe"
             meta={`${holdings.top_institutions.length} HOLDERS`}
             tight
+            info={INFO.holders_top_institutions}
           >
             <table className="w-full text-[11px] tabular-nums">
               <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">

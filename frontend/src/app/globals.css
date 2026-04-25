@@ -11,7 +11,7 @@
   --text: #d4d7de;
   --text-dim: #737a88;
   --text-faint: #4a4f5c;
-  --accent: #d4ff3f;
+  --accent: #c8e85a;
   --green: #3fd97b;
   --red: #ff5c5c;
   --amber: #ffb547;
@@ -35,7 +35,7 @@ body {
 
 body {
   background-image:
-    radial-gradient(circle at 20% 10%, rgba(212, 255, 63, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 20% 10%, rgba(200, 232, 90, 0.03) 0%, transparent 40%),
     radial-gradient(circle at 80% 80%, rgba(92, 213, 255, 0.02) 0%, transparent 40%);
   min-height: 100vh;
 }

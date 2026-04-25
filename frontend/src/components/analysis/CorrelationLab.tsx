@@ -10,6 +10,7 @@ import { ScatterPlot } from "./ScatterPlot";
 import type { AnalysisAxesResponse, ScatterResponse } from "@/lib/types";
 import type { DateRange } from "@/lib/dateRange";
 import { fmtSigned } from "@/lib/format";
+import { INFO } from "@/lib/info";
 
 export function CorrelationLab({
   axes,
@@ -69,6 +70,7 @@ export function CorrelationLab({
     <Panel
       title="Correlation Lab"
       meta={`${data.points.length} observations`}
+      info={INFO.correlations_scatter}
     >
       <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr]">
         <Picker

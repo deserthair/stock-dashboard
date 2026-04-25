@@ -7,6 +7,7 @@ import { DateRangePicker } from "@/components/ui/DateRangePicker";
 import { Panel } from "@/components/ui/Panel";
 import { fmtSigned } from "@/lib/format";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
 
 const DEFAULT_FEATURE = "news_sentiment_mean_30d";
 const DEFAULT_TARGET = "eps_surprise_pct";
@@ -58,7 +59,11 @@ export default async function CorrelationsPage({
           initial={scatter}
         />
 
-        <Panel title="Feature × Feature Heatmap" meta={heatmap.method.toUpperCase()}>
+        <Panel
+          title="Feature × Feature Heatmap"
+          meta={heatmap.method.toUpperCase()}
+          info={INFO.correlations_heatmap}
+        >
           {heatmap.features.length === 0 ? (
             <p className="text-[11px] text-fg-dim">
               Not enough feature rows. Populate <code>features_earnings</code>.
@@ -77,6 +82,7 @@ export default async function CorrelationsPage({
         title={`Ranked Univariate Correlations (${correlations.length})`}
         meta="ORDER: p_adjusted ↑"
         tight
+        info={INFO.correlations_table}
       >
         {correlations.length === 0 ? (
           <p className="px-3 py-8 text-center text-[11px] text-fg-faint">

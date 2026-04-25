@@ -1,6 +1,7 @@
 import type { TrendsSeriesOut } from "@/lib/types";
 import { Panel } from "@/components/ui/Panel";
 import { directionClass, fmtPct, fmtSigned } from "@/lib/format";
+import { INFO } from "@/lib/info";
 
 /** Pure-SVG sparkline for a Google Trends series. */
 export function TrendsSparkline({
@@ -49,7 +50,16 @@ export function TrendsCard({ series }: { series: TrendsSeriesOut }) {
   const q = series.query;
   const latest = series.latest;
   return (
-    <Panel title={q.label} meta={q.category.toUpperCase()} tight>
+    <Panel
+      title={q.label}
+      meta={q.category.toUpperCase()}
+      tight
+      info={{
+        ...INFO.trends_card,
+        title: q.label,
+        pageContext: `query="${q.query}"; category=${q.category}; latest=${latest}; 30d_change=${series.change_30d_pct}%; 90d_change=${series.change_90d_pct}%`,
+      }}
+    >
       <div className="flex items-baseline gap-3 border-b border-border px-3 py-2">
         <div className="font-serif text-[20px] font-medium leading-none">
           {latest !== null && latest !== undefined ? latest.toFixed(0) : "—"}

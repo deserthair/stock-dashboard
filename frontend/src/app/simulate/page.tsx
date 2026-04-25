@@ -1,5 +1,7 @@
 import { api } from "@/lib/api";
 import { Shell } from "@/components/layout/Shell";
+import { InfoIcon } from "@/components/ui/InfoIcon";
+import { INFO } from "@/lib/info";
 import { SimulateTabs } from "./SimulateTabs";
 
 const DEFAULT_TICKER = "CMG";
@@ -33,13 +35,16 @@ export default async function SimulatePage({
   return (
     <Shell universe={universe} activeTicker={ticker}>
       <header className="mb-3 flex flex-wrap items-baseline gap-4 border-b border-border pb-2">
-        <h1 className="font-serif text-2xl font-medium tracking-tight">Simulations</h1>
+        <h1 className="flex items-center gap-2 font-serif text-2xl font-medium tracking-tight">
+          Simulations
+          <InfoIcon info={INFO.simulate_overview} />
+        </h1>
         <span className="text-[11px] uppercase tracking-[0.1em] text-fg-faint">
           Monte Carlo price paths · earnings-reaction bootstrap · probabilistic DCF
         </span>
       </header>
 
-      <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(212,255,63,0.04)] via-transparent to-transparent px-4 py-3.5">
+      <div className="mb-3 border border-border-hot border-l-[3px] border-l-accent bg-gradient-to-br from-[rgba(200,232,90,0.04)] via-transparent to-transparent px-4 py-3.5">
         <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-accent">
           ◆ What this is, honestly
         </div>

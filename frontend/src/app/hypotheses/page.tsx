@@ -11,6 +11,7 @@ import {
   fmtSigned,
 } from "@/lib/format";
 import { labelFor, rangeFromSearch } from "@/lib/dateRange";
+import { INFO } from "@/lib/info";
 
 export default async function HypothesesPage({
   searchParams,
@@ -36,13 +37,23 @@ export default async function HypothesesPage({
       </header>
 
       <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <StatTile label="Events Tracked" value={tracker.total} />
-        <StatTile label="Scored" value={tracker.scored} delta="BEAT or MISS label present" />
+        <StatTile
+          label="Events Tracked"
+          value={tracker.total}
+          info={INFO.hypotheses_events_tracked}
+        />
+        <StatTile
+          label="Scored"
+          value={tracker.scored}
+          delta="BEAT or MISS label present"
+          info={INFO.hypotheses_scored}
+        />
         <StatTile
           label="Correct"
           value={tracker.correct}
           valueClass="text-accent"
           delta={`of ${tracker.scored} confirmed`}
+          info={INFO.hypotheses_correct}
         />
         <StatTile
           label="Accuracy"
@@ -53,6 +64,7 @@ export default async function HypothesesPage({
               : "text-amber"
           }
           delta="Baseline 50% = coin flip"
+          info={INFO.hypotheses_accuracy}
         />
       </div>
 
@@ -60,6 +72,7 @@ export default async function HypothesesPage({
         title="Historical Predictions"
         meta="LASSO ATTRIBUTION — TOP DRIVERS PER EVENT"
         tight
+        info={INFO.hypotheses_history}
       >
         <table className="w-full text-[11px] tabular-nums">
           <thead className="bg-panel-2 text-[10px] uppercase tracking-[0.1em] text-fg-faint">
